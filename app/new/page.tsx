@@ -1,18 +1,47 @@
-"use client";
+import { nanoid } from "nanoid";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { journeys } from "@/lib/db/schema";
+import { generateId } from "@/lib/utils/id";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+function createDefaultMilestoneNode() {
+  return {
+    id: nanoid(),
+    type: "milestone" as const,
+    position: { x: 0, y: 0 },
+    data: {
+      label: "Start",
+      description: "",
+      type: "milestone" as const,
+      status: "not-started" as const,
+    },
+  };
+}
 
-export default function JourneyPage() {
-  const router = useRouter();
+export default async function NewJourneyPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const journeyId = generateId();
 
-  useEffect(() => {
-    const redirectToJourney = async () => {
-      router.replace("/");
-    };
+  if (!session?.user) {
+    redirect(`/j/${journeyId}`);
+  }
 
-    redirectToJourney();
-  }, [router]);
+  const node = createDefaultMilestoneNode();
+  const [newJourney] = await db
+    .insert(journeys)
+    .values({
+      id: journeyId,
+      name: "Untitled Journey",
+      userId: session.user.id,
+      nodes: [node],
+      edges: [],
+      visibility: "private",
+    })
+    .returning();
 
-  return null;
+  redirect(`/j/${newJourney.id}`);
 }

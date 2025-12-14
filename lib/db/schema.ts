@@ -68,9 +68,7 @@ export const journeys = pgTable("journeys", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
-  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
   nodes: jsonb("nodes").notNull().$type<any[]>(),
-  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
   edges: jsonb("edges").notNull().$type<any[]>(),
   visibility: text("visibility")
     .notNull()

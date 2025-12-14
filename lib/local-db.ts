@@ -24,16 +24,20 @@ interface JourneyDBSchema extends DBSchema {
   };
 }
 
+type JourneyVisibility = "private" | "public";
+
 // Local journey type
 export type LocalJourney = {
   id: string;
+  userId: string;
   name: string;
-  description: string;
+  description: string | null;
   nodes: JourneyNode[];
   edges: JourneyEdge[];
-  visibility: "private" | "public";
+  visibility: JourneyVisibility;
   createdAt: string;
   updatedAt: string;
+  isOwner: boolean;
   // Sync tracking - same ID is used locally and on server
   syncedAt?: string; // If set, journey exists on server
   isDirty?: boolean; // Has unsynced local changes
@@ -88,6 +92,7 @@ export async function createLocalJourney(
 
   const journey: LocalJourney = {
     id: data.id || nanoid(),
+    userId: "",
     name: journeyName,
     description: data.description || "",
     nodes: data.nodes || [],
@@ -95,6 +100,7 @@ export async function createLocalJourney(
     visibility: data.visibility || "private",
     createdAt: data.createdAt || now,
     updatedAt: now,
+    isOwner: true,
     isDirty: true,
   };
 

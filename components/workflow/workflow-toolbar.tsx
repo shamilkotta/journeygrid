@@ -97,6 +97,7 @@ import { Panel } from "../ai-elements/panel";
 import { Logo } from "../logo";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
+import Link from "next/link";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -993,10 +994,10 @@ function WorkflowMenuComponent({
               asChild
               className="flex items-center justify-between"
             >
-              <a href="/">
+              <Link href="/new">
                 New Journey{" "}
                 {!workflowId && <Check className="size-4 shrink-0" />}
-              </a>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {state.allWorkflows.length === 0 ? (

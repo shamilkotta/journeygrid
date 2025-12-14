@@ -1,32 +1,47 @@
-"use client";
+import { nanoid } from "nanoid";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { journeys } from "@/lib/db/schema";
+import { generateId } from "@/lib/utils/id";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { getMostRecentLocalJourney } from "@/lib/local-db";
+function createDefaultMilestoneNode() {
+  return {
+    id: nanoid(),
+    type: "milestone" as const,
+    position: { x: 0, y: 0 },
+    data: {
+      label: "Start",
+      description: "",
+      type: "milestone" as const,
+      status: "not-started" as const,
+    },
+  };
+}
 
-export default function JourneyPage() {
-  const router = useRouter();
+export default async function NewJourneyPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const journeyId = generateId();
 
-  useEffect(() => {
-    const redirectToJourney = async () => {
-      try {
-        // Get most recent journey from local storage
-        const mostRecent = await getMostRecentLocalJourney();
+  if (!session?.user) {
+    redirect(`/j/${journeyId}`);
+  }
 
-        if (mostRecent) {
-          router.replace(`/j/${mostRecent.id}`);
-        } else {
-          // No journeys, redirect to homepage
-          router.replace("/");
-        }
-      } catch (error) {
-        console.error("Failed to load journeys:", error);
-        router.replace("/");
-      }
-    };
+  const node = createDefaultMilestoneNode();
+  const [newJourney] = await db
+    .insert(journeys)
+    .values({
+      id: journeyId,
+      name: "Untitled Journey",
+      userId: session.user.id,
+      nodes: [node],
+      edges: [],
+      visibility: "private",
+    })
+    .returning();
 
-    redirectToJourney();
-  }, [router]);
-
-  return null;
+  redirect(`/j/${newJourney.id}`);
 }

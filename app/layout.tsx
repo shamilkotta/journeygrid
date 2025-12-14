@@ -4,7 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Provider } from "jotai";
-import { type ReactNode, Suspense } from "react";
+import type { ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -34,7 +34,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   return (
     <ReactFlowProvider>
       <PersistentCanvas />
-      <div className="pointer-events-none relative z-10">{children}</div>
+      <div className="">{children}</div>
     </ReactFlowProvider>
   );
 }
@@ -50,9 +50,7 @@ const RootLayout = ({ children }: RootLayoutProps) => (
       >
         <Provider>
           <AuthProvider>
-            <Suspense fallback={<LayoutContent>{children}</LayoutContent>}>
-              <LayoutContent>{children}</LayoutContent>
-            </Suspense>
+            <LayoutContent>{children}</LayoutContent>
             <Toaster />
           </AuthProvider>
         </Provider>

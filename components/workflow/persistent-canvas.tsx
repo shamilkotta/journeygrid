@@ -7,7 +7,8 @@ export function PersistentCanvas() {
   const pathname = usePathname();
 
   // Show canvas on homepage and journey pages
-  const showCanvas = pathname === "/" || pathname.startsWith("/j/");
+  const showCanvas =
+    pathname === "/" || pathname.startsWith("/j/") || pathname === "/new";
 
   if (!showCanvas) {
     return null;

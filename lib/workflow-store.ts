@@ -1,8 +1,13 @@
 import type { Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { atom } from "jotai";
-import { createLocalJourney, updateLocalJourney } from "./local-db";
+import {
+  createLocalJourney,
+  getLocalJourney,
+  updateLocalJourney,
+} from "./local-db";
 import { debouncedSync } from "./sync-service";
+import { atomFamily } from "jotai-family";
 
 export type JourneyNodeType = "milestone" | "goal" | "task" | "add";
 
@@ -103,7 +108,21 @@ export const autosaveAtom = atom(
     const saveFunc = async () => {
       try {
         // Save to local IndexedDB
-        await updateLocalJourney(journeyId, { nodes, edges });
+        const resp = await updateLocalJourney(journeyId, { nodes, edges });
+        if (!resp) {
+          await createLocalJourney({
+            id: journeyId,
+            name: get(currentJourneyNameAtom),
+            description: "",
+            nodes,
+            edges,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isOwner: true,
+            isDirty: false,
+            visibility: get(currentJourneyVisibilityAtom),
+          });
+        }
         // Clear the unsaved changes indicator after successful save
         set(hasUnsavedChangesAtom, false);
         // Trigger debounced sync to server (if authenticated)
@@ -124,6 +143,14 @@ export const autosaveAtom = atom(
       autosaveTimeoutId = setTimeout(saveFunc, AUTOSAVE_DELAY);
     }
   }
+);
+
+export const journeyAtomFamily = atomFamily((journeyId: string) =>
+  atom(async () => {
+    console.log("Loading journey", journeyId);
+    const journey = await getLocalJourney(journeyId);
+    return journey;
+  })
 );
 
 // Derived atoms for node/edge operations
