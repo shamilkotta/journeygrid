@@ -4,10 +4,11 @@ import { atom } from "jotai";
 import {
   LocalJourney,
   createLocalJourney,
+  deleteLocalJourney,
   getLocalJourney,
   updateLocalJourney,
 } from "./local-db";
-import { debouncedSync } from "./sync-service";
+import { debouncedSync, deleteJourney } from "./sync-service";
 import { atomFamily } from "jotai-family";
 
 export type JourneyNodeType = "milestone" | "goal" | "task" | "add";
@@ -100,11 +101,28 @@ const AUTOSAVE_DELAY = 1000; // 1 second debounce for field typing
 export const setCurrentJourneyAtom = atom(
   null,
   async (get, set, journey: LocalJourney) => {
-    const { nodes, edges, ...rest } = journey;
+    const existingJourney = await getLocalJourney(journey.id);
+    if (!existingJourney) {
+      await createLocalJourney(journey);
+    }
+
+    let updated = journey;
+
+    if (
+      existingJourney &&
+      new Date(existingJourney.updatedAt) > new Date(journey.updatedAt)
+    ) {
+      updated = {
+        ...journey,
+        ...existingJourney,
+      };
+    }
+    await updateLocalJourney(journey.id, updated);
+    debouncedSync(journey.id);
+    const { nodes, edges, ...rest } = updated;
     set(nodesAtom, nodes);
     set(edgesAtom, edges);
     set(currentJourneyAtom, rest);
-    await set(autosaveAtom, { immediate: true });
   }
 );
 
@@ -141,18 +159,11 @@ export const autosaveAtom = atom(
     const saveFunc = async () => {
       try {
         // Save to local IndexedDB
-        const resp = await updateLocalJourney(currentJourney.id, {
+        await updateLocalJourney(currentJourney.id, {
           ...currentJourney,
           nodes,
           edges,
         });
-        if (!resp && currentJourney.isOwner) {
-          await createLocalJourney({
-            ...currentJourney,
-            nodes,
-            edges,
-          });
-        }
         // Clear the unsaved changes indicator after successful save
         set(hasUnsavedChangesAtom, false);
         // Trigger debounced sync to server (if authenticated)
@@ -434,7 +445,7 @@ export const deleteSelectedItemsAtom = atom(null, (get, set) => {
   set(autosaveAtom, { immediate: true });
 });
 
-export const clearWorkflowAtom = atom(null, (get, set) => {
+export const clearJourneyAtom = atom(null, (get, set) => {
   // Save current state to history before making changes
   const currentNodes = get(nodesAtom);
   const currentEdges = get(edgesAtom);
@@ -450,6 +461,23 @@ export const clearWorkflowAtom = atom(null, (get, set) => {
   // Save immediately to local storage
   set(autosaveAtom, { immediate: true });
 });
+
+export const deleteJourneyAtom = atom(
+  null,
+  async (get, set, journeyId: string) => {
+    await deleteLocalJourney(journeyId);
+    set(
+      allJourneysAtom,
+      get(allJourneysAtom).filter((journey) => journey.id !== journeyId)
+    );
+    set(currentJourneyAtom, null);
+    set(nodesAtom, []);
+    set(edgesAtom, []);
+    set(selectedNodeAtom, null);
+    set(selectedEdgeAtom, null);
+    deleteJourney(journeyId).then(() => {});
+  }
+);
 
 // Load journey from local storage
 export const loadJourneyAtom = atom(null, async (_get, set) => {

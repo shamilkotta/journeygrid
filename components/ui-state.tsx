@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { WorkflowSkeleton } from "@/components/workflow-skeleton";
 import Link from "next/link";
 import { useTransition } from "react";
-import { createNewJourney } from "@/lib/actions";
+import { newJourney } from "@/app/api/journey/new";
 import { Spinner } from "./ui/spinner";
 
 export function LoadingFallback() {
@@ -82,7 +82,7 @@ export const ErrorFallback = ({
   const handleCreateNewJourney = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     if (pending) return;
-    startTransition(createNewJourney);
+    startTransition(newJourney);
   };
 
   return (
@@ -162,7 +162,7 @@ export const NotFoundFallback = () => {
   const handleCreateNewJourney = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     if (pending) return;
-    startTransition(createNewJourney);
+    startTransition(newJourney);
   };
 
   return (

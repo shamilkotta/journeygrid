@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTransition } from "react";
 import { Spinner } from "@/components/ui/spinner";
-import { createNewJourney } from "@/lib/actions";
+import { newJourney } from "@/app/api/journey/new";
 
 type AddNodeData = {
   onClick?: () => void;
@@ -15,7 +15,7 @@ export function AddNode({ data }: NodeProps & { data?: AddNodeData }) {
   const [pending, startTransition] = useTransition();
 
   const handleClick = () => {
-    startTransition(createNewJourney);
+    startTransition(newJourney);
   };
 
   return (

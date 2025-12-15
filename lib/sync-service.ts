@@ -28,6 +28,8 @@ export type SyncResult = {
 // Debounce timer for sync operations
 let syncDebounceTimer: NodeJS.Timeout | null = null;
 const SYNC_DEBOUNCE_MS = 5000; // 5 seconds
+let idleTimeout: NodeJS.Timeout | null = null;
+const IDLE_TIMEOUT_MS = 60000; // 1 minute
 
 // Track current sync status
 let currentSyncStatus: SyncStatus = "idle";
@@ -51,6 +53,15 @@ function setSyncStatus(status: SyncStatus): void {
   currentSyncStatus = status;
   for (const listener of syncStatusListeners) {
     listener(status);
+  }
+
+  if (status == "synced") {
+    if (idleTimeout) {
+      clearTimeout(idleTimeout);
+    }
+    idleTimeout = setTimeout(() => {
+      setSyncStatus("idle");
+    }, IDLE_TIMEOUT_MS);
   }
 }
 
@@ -210,37 +221,36 @@ export async function syncJourney(id: string): Promise<boolean> {
       return false;
     }
 
-    // Skip if not dirty
-    if (!journey.isDirty) {
-      return true;
-    }
+    // // Skip if not dirty
+    // if (!journey.isDirty) {
+    //   return true;
+    // }
 
-    if (journey.syncedAt) {
-      // Already exists on server, update it
-      await journeyApi.update(id, {
-        name: journey.name,
-        description: journey.description,
-        nodes: journey.nodes,
-        edges: journey.edges,
-        visibility: journey.visibility,
-      });
-    } else {
-      // New journey, create on server
-      await journeyApi.create({
-        id: journey.id,
-        name: journey.name,
-        description: journey.description,
-        nodes: journey.nodes,
-        edges: journey.edges,
-        visibility: journey.visibility,
-      });
-    }
+    await journeyApi.update(id, {
+      userId: journey.userId,
+      name: journey.name,
+      description: journey.description,
+      nodes: journey.nodes,
+      edges: journey.edges,
+      visibility: journey.visibility,
+      updatedAt: journey.updatedAt,
+    });
 
     // Mark as synced
     await markJourneySynced(id);
     return true;
   } catch (error) {
     console.error(`[Sync] Failed to sync journey ${id}:`, error);
+    return false;
+  }
+}
+
+export async function deleteJourney(id: string): Promise<boolean> {
+  try {
+    await journeyApi.delete(id);
+    return true;
+  } catch (error) {
+    console.error(`[Sync] Failed to delete journey ${id}:`, error);
     return false;
   }
 }

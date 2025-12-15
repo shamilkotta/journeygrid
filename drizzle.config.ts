@@ -3,8 +3,6 @@ import type { Config } from "drizzle-kit";
 
 config();
 
-console.log({ db: process.env.DATABASE_URL });
-
 export default {
   schema: "./lib/db/schema.ts",
   out: "./drizzle",

@@ -127,21 +127,9 @@ export async function updateLocalJourney(
     return;
   }
 
-  const updatedAt = new Date(data.updatedAt || new Date().toISOString());
-  const existUpdatedAt = new Date(existing.updatedAt);
-  let payload = {
+  const updated: LocalJourney = {
     ...existing,
     ...data,
-  };
-  if (existUpdatedAt > updatedAt) {
-    payload = {
-      ...data,
-      ...existing,
-    };
-  }
-
-  const updated: LocalJourney = {
-    ...payload,
     id, // Ensure ID doesn't change
     updatedAt: new Date().toISOString(),
     isDirty: true,

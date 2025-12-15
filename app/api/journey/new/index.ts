@@ -1,11 +1,11 @@
 "use server";
 
 import { headers } from "next/headers";
-import { auth } from "./auth";
-import { db } from "./db";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { nanoid } from "nanoid";
-import { generateId } from "./utils/id";
-import { journeys } from "./db/schema";
+import { generateId } from "@/lib/utils/id";
+import { journeys } from "@/lib/db/schema";
 import { redirect } from "next/navigation";
 
 function createDefaultMilestoneNode() {
@@ -22,13 +22,12 @@ function createDefaultMilestoneNode() {
   };
 }
 
-export const createNewJourney = async () => {
+export const newJourney = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   let user = session?.user;
   if (!user) {
-    console.log("reached ehre.........");
     const result = await auth.api.signInAnonymous({
       headers: await headers(),
     });
@@ -37,7 +36,6 @@ export const createNewJourney = async () => {
     }
     user = result.user;
   }
-  console.log({ user });
   const node = createDefaultMilestoneNode();
   const journeyId = generateId();
   const [newJourney] = await db

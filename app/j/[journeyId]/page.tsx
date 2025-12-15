@@ -33,39 +33,11 @@ const JourneyPage = async ({ params }: JourneyPageProps) => {
   if (journey) {
     journey = {
       ...journey,
+      updatedAt: journey.updatedAt.toISOString(),
+      createdAt: journey.createdAt.toISOString(),
       isOwner: journey.userId == session?.user.id,
     };
   }
-
-  // if (!journey && refererPath && ["new", "j"].includes(refererPath)) {
-  //   console.log("Creating new journey");
-  //   const node = {
-  //     id: nanoid(),
-  //     type: "milestone" as const,
-  //     position: { x: 0, y: 0 },
-  //     data: {
-  //       label: "Start",
-  //       description: "",
-  //       type: "milestone" as const,
-  //       status: "not-started" as const,
-  //     },
-  //   };
-  //   journey = {
-  //     id: journeyId,
-  //     userId: session?.user.id || "",
-  //     name: "Untitled Journey",
-  //     description: null,
-  //     nodes: [node],
-  //     edges: [],
-  //     visibility: "private",
-  //     createdAt: new Date().toISOString(),
-  //     updatedAt: new Date().toISOString(),
-  //     isOwner: true,
-  //     isDirty: true,
-  //   };
-  // }
-
-  console.log({ journey });
 
   return <JourneyEditor journeyId={journeyId} journey={journey} />;
 };

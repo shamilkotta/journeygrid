@@ -74,11 +74,9 @@ export async function GET(
 }
 
 // Helper to build update data from request body
-function buildUpdateData(
-  body: Record<string, unknown>
-): Record<string, unknown> {
+function buildUpdateData(body: Record<string, any>): Record<string, unknown> {
   const updateData: Record<string, unknown> = {
-    updatedAt: new Date(),
+    updatedAt: body.updatedAt ? new Date(body.updatedAt) : new Date(),
   };
 
   if (body.name !== undefined) {
@@ -141,12 +139,15 @@ export async function PATCH(
     }
 
     const updateData = buildUpdateData(body);
+    updateData.userId = session.user.id;
 
     const [updatedJourney] = await db
       .update(journeys)
       .set(updateData)
       .where(eq(journeys.id, journeyId))
       .returning();
+
+    console.log({ update: updatedJourney, updateData });
 
     if (!updatedJourney) {
       return NextResponse.json({ error: "Journey not found" }, { status: 404 });

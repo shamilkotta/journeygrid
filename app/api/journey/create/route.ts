@@ -48,13 +48,13 @@ export async function POST(request: Request) {
 
     // Generate "Untitled N" name if the provided name is "Untitled Journey"
     let journeyName = body.name;
-    if (body.name === "Untitled Journey" || body.name === "Untitled Workflow") {
-      const userJourneys = await db.query.journeys.findMany({
-        where: eq(journeys.userId, session.user.id),
-      });
-      const count = userJourneys.length + 1;
-      journeyName = `Untitled ${count}`;
-    }
+    // if (body.name === "Untitled Journey" || body.name === "Untitled Workflow") {
+    //   const userJourneys = await db.query.journeys.findMany({
+    //     where: eq(journeys.userId, session.user.id),
+    //   });
+    //   const count = userJourneys.length + 1;
+    //   journeyName = `Untitled ${count}`;
+    // }
 
     // Use provided ID or generate a new one
     const journeyId = body.id || generateId();

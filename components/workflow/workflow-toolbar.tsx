@@ -22,7 +22,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -58,7 +58,6 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSync } from "@/hooks/use-sync";
 import { useSession } from "@/lib/auth-client";
 import {
-  deleteLocalJourney,
   duplicateLocalJourney,
   getAllLocalJourneys,
   updateLocalJourney,
@@ -68,7 +67,7 @@ import {
   allJourneysAtom,
   canRedoAtom,
   canUndoAtom,
-  clearWorkflowAtom,
+  clearJourneyAtom,
   currentJourneyIdAtom,
   deleteEdgeAtom,
   deleteNodeAtom,
@@ -91,14 +90,15 @@ import {
   updateNodeDataAtom,
   currentJourneyAtom,
   updateCurrentJourneyAtom,
+  deleteJourneyAtom,
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
 import { Logo } from "../logo";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
 import Link from "next/link";
-import { createNewJourney } from "@/lib/actions";
 import { Spinner } from "../ui/spinner";
+import { newJourney } from "@/app/api/journey/new";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -274,7 +274,7 @@ function useJourneyState() {
   const [nodes, setNodes] = useAtom(nodesAtom);
   const [edges, setEdges] = useAtom(edgesAtom);
   const [isGenerating] = useAtom(isGeneratingAtom);
-  const clearWorkflow = useSetAtom(clearWorkflowAtom);
+  const clearWorkflow = useSetAtom(clearJourneyAtom);
   const updateNodeData = useSetAtom(updateNodeDataAtom);
   const currentJourneyId = useAtomValue(currentJourneyIdAtom);
   const updateCurrentJourney = useSetAtom(updateCurrentJourneyAtom);
@@ -295,6 +295,7 @@ function useJourneyState() {
   const setActiveTab = useSetAtom(propertiesPanelActiveTabAtom);
   const setSelectedNodeId = useSetAtom(selectedNodeAtom);
   const currentJourney = useAtomValue(currentJourneyAtom);
+  const deleteJourney = useSetAtom(deleteJourneyAtom);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
@@ -356,6 +357,7 @@ function useJourneyState() {
     setEdges,
     setSelectedNodeId,
     updateCurrentJourney,
+    deleteJourney,
   };
 }
 
@@ -363,7 +365,6 @@ function useJourneyState() {
 function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
   const {
     currentJourneyId,
-    currentJourney,
     nodes,
     edges,
     setIsSaving,
@@ -374,6 +375,7 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
     setIsDuplicating,
     setShowMakePublicDialog,
     updateCurrentJourney,
+    deleteJourney,
     router,
   } = state;
 
@@ -397,10 +399,10 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
 
     try {
       // Delete from local IndexedDB
-      await deleteLocalJourney(currentJourneyId);
+      await deleteJourney(currentJourneyId);
       setShowDeleteDialog(false);
       toast.success("Journey deleted successfully");
-      window.location.href = "/";
+      router.replace("/");
     } catch (error) {
       console.error("Failed to delete journey:", error);
       toast.error("Failed to delete journey. Please try again.");
@@ -505,6 +507,7 @@ function ToolbarActions({
   const deleteNode = useSetAtom(deleteNodeAtom);
   const deleteEdge = useSetAtom(deleteEdgeAtom);
   const { screenToFlowPosition } = useReactFlow();
+  const pathName = usePathname();
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId);
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId);
@@ -612,29 +615,31 @@ function ToolbarActions({
       </ButtonGroup>
 
       {/* Properties - Mobile Vertical (always visible) */}
-      <ButtonGroup className="flex lg:hidden" orientation="vertical">
-        <Button
-          className="border hover:bg-black/5 dark:hover:bg-white/5"
-          onClick={() => setShowPropertiesSheet(true)}
-          size="icon"
-          title="Properties"
-          variant="secondary"
-        >
-          <Settings2 className="size-4" />
-        </Button>
-        {/* Delete - Show when node or edge is selected */}
-        {hasSelection && (
+      {pathName != "/" && (
+        <ButtonGroup className="flex lg:hidden" orientation="vertical">
           <Button
             className="border hover:bg-black/5 dark:hover:bg-white/5"
-            onClick={() => setShowDeleteAlert(true)}
+            onClick={() => setShowPropertiesSheet(true)}
             size="icon"
-            title="Delete"
+            title="Properties"
             variant="secondary"
           >
-            <Trash2 className="size-4" />
+            <Settings2 className="size-4" />
           </Button>
-        )}
-      </ButtonGroup>
+          {/* Delete - Show when node or edge is selected */}
+          {hasSelection && (
+            <Button
+              className="border hover:bg-black/5 dark:hover:bg-white/5"
+              onClick={() => setShowDeleteAlert(true)}
+              size="icon"
+              title="Delete"
+              variant="secondary"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
+        </ButtonGroup>
+      )}
 
       {/* Properties Sheet - Mobile Only */}
       <Sheet onOpenChange={setShowPropertiesSheet} open={showPropertiesSheet}>
@@ -790,7 +795,7 @@ function SyncStatusIndicator({
   const getStatusIcon = () => {
     switch (status) {
       case "syncing":
-        return <RefreshCw className="size-4 animate-spin" />;
+        return <Spinner className="size-4" />;
       case "synced":
         return <Cloud className="size-4" />;
       case "error":
@@ -940,7 +945,7 @@ function WorkflowMenuComponent({
   const handleNewJourney = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     if (pending) return;
-    startTransition(createNewJourney);
+    startTransition(newJourney);
   };
 
   return (
