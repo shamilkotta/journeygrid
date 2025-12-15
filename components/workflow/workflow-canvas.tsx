@@ -160,7 +160,10 @@ export function WorkflowCanvas() {
   // Fit view when workflow changes (only on initial load, not home -> workflow)
   useEffect(() => {
     // Skip if we've already fitted view for this journey
-    if (fittedViewForJourneyRef.current === currentJourneyId) {
+    if (
+      currentJourneyId &&
+      fittedViewForJourneyRef.current === currentJourneyId
+    ) {
       return;
     }
 
@@ -589,7 +592,7 @@ export function WorkflowCanvas() {
       </Canvas>
 
       {/* AI Prompt - show for AI generation */}
-      {!isAnonymous && <AIPrompt workflowId={currentJourneyId ?? undefined} />}
+      {/* {!isAnonymous && <AIPrompt workflowId={currentJourneyId ?? undefined} />} */}
 
       {/* Context Menu */}
       <WorkflowContextMenu

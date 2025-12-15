@@ -18,20 +18,20 @@ import { Label } from "@/components/ui/label";
 import { getAllLocalJourneys, updateLocalJourney } from "@/lib/local-db";
 import {
   allJourneysAtom,
+  currentJourneyAtom,
   currentJourneyIdAtom,
-  currentJourneyNameAtom,
   deleteEdgeAtom,
   deleteNodeAtom,
   deleteSelectedItemsAtom,
   edgesAtom,
   isGeneratingAtom,
-  isJourneyOwnerAtom,
   nodesAtom,
   propertiesPanelActiveTabAtom,
   selectedEdgeAtom,
   selectedNodeAtom,
   showClearDialogAtom,
   showDeleteDialogAtom,
+  updateCurrentJourneyAtom,
   updateNodeDataAtom,
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
@@ -119,11 +119,9 @@ export const PanelInner = () => {
   const [nodes] = useAtom(nodesAtom);
   const edges = useAtomValue(edgesAtom);
   const [isGenerating] = useAtom(isGeneratingAtom);
-  const [currentJourneyId] = useAtom(currentJourneyIdAtom);
-  const [currentJourneyName, setCurrentJourneyName] = useAtom(
-    currentJourneyNameAtom
-  );
-  const isOwner = useAtomValue(isJourneyOwnerAtom);
+  const currentJourneyId = useAtomValue(currentJourneyIdAtom);
+  const currentJourney = useAtomValue(currentJourneyAtom);
+  const updateCurrentJourney = useSetAtom(updateCurrentJourneyAtom);
   const updateNodeData = useSetAtom(updateNodeDataAtom);
   const deleteNode = useSetAtom(deleteNodeAtom);
   const deleteEdge = useSetAtom(deleteEdgeAtom);
@@ -180,16 +178,15 @@ export const PanelInner = () => {
   };
 
   const handleUpdateJourneyName = async (newName: string) => {
-    setCurrentJourneyName(newName);
-
     // Save to local IndexedDB if journey exists
     if (currentJourneyId) {
       try {
-        await updateLocalJourney(currentJourneyId, {
-          name: newName,
-          nodes,
-          edges,
-        });
+        await updateCurrentJourney(
+          {
+            name: newName,
+          },
+          { immediate: true }
+        );
         // Refresh the journey list to update the dropdown
         const journeys = await getAllLocalJourneys();
         setAllJourneys(journeys);
@@ -210,6 +207,9 @@ export const PanelInner = () => {
       />
     );
   }
+
+  const isOwner = currentJourney?.isOwner;
+  const currentJourneyName = currentJourney?.name;
 
   // If an edge is selected, show edge properties
   if (selectedEdge) {

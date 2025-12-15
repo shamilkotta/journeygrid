@@ -16,21 +16,23 @@ import type {
 export type JourneyVisibility = "private" | "public";
 
 export type JourneyData = {
-  id?: string;
-  name?: string;
-  description?: string;
+  id: string;
+  name: string;
+  userId: string;
+  description: string | null;
   nodes: JourneyNode[];
   edges: JourneyEdge[];
-  visibility?: JourneyVisibility;
+  visibility: JourneyVisibility;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type SavedJourney = JourneyData & {
+export type SavedJourney = {
   id: string;
   name: string;
   visibility: JourneyVisibility;
   createdAt: string;
   updatedAt: string;
-  isOwner?: boolean;
 };
 
 // API error class
@@ -347,18 +349,18 @@ export const journeyApi = {
   getAll: () => apiCall<SavedJourney[]>("/api/journey"),
 
   // Get a specific journey
-  getById: (id: string) => apiCall<SavedJourney>(`/api/journey/${id}`),
+  getById: (id: string) => apiCall<JourneyData>(`/api/journey/${id}`),
 
   // Create a new journey (id is optional - if provided, uses that ID)
   create: (journey: JourneyData) =>
-    apiCall<SavedJourney>("/api/journey/create", {
+    apiCall<JourneyData>("/api/journey/create", {
       method: "POST",
       body: JSON.stringify(journey),
     }),
 
   // Update a journey
   update: (id: string, journey: Partial<JourneyData>) =>
-    apiCall<SavedJourney>(`/api/journey/${id}`, {
+    apiCall<JourneyData>(`/api/journey/${id}`, {
       method: "PATCH",
       body: JSON.stringify(journey),
     }),
@@ -371,7 +373,7 @@ export const journeyApi = {
 
   // Duplicate a journey
   duplicate: (id: string) =>
-    apiCall<SavedJourney>(`/api/journey/${id}/duplicate`, {
+    apiCall<JourneyData>(`/api/journey/${id}/duplicate`, {
       method: "POST",
     }),
 

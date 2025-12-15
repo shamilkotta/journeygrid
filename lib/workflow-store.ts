@@ -2,6 +2,7 @@ import type { Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { atom } from "jotai";
 import {
+  LocalJourney,
   createLocalJourney,
   getLocalJourney,
   updateLocalJourney,
@@ -65,10 +66,14 @@ export const selectedNodeAtom = atom<string | null>(null);
 export const selectedEdgeAtom = atom<string | null>(null);
 export const isLoadingAtom = atom(false);
 export const isGeneratingAtom = atom(false);
-export const currentJourneyIdAtom = atom<string | null>(null);
-export const currentJourneyNameAtom = atom<string>("");
-export const currentJourneyVisibilityAtom = atom<JourneyVisibility>("private");
-export const isJourneyOwnerAtom = atom<boolean>(true); // Whether current user owns this journey
+export const currentJourneyAtom = atom<Omit<
+  LocalJourney,
+  "nodes" | "edges"
+> | null>(null);
+export const currentJourneyIdAtom = atom((get) => get(currentJourneyAtom)?.id);
+// export const currentJourneyNameAtom = atom<string>("");
+// export const currentJourneyVisibilityAtom = atom<JourneyVisibility>("private");
+// export const isJourneyOwnerAtom = atom<boolean>(true);
 
 // UI state atoms
 export const propertiesPanelActiveTabAtom = atom<string>("properties");
@@ -92,41 +97,66 @@ export const nodeCommentsAtom = atom<Record<string, Comment[]>>({});
 let autosaveTimeoutId: NodeJS.Timeout | null = null;
 const AUTOSAVE_DELAY = 1000; // 1 second debounce for field typing
 
+export const setCurrentJourneyAtom = atom(
+  null,
+  async (get, set, journey: LocalJourney) => {
+    const { nodes, edges, ...rest } = journey;
+    set(nodesAtom, nodes);
+    set(edgesAtom, edges);
+    set(currentJourneyAtom, rest);
+    await set(autosaveAtom, { immediate: true });
+  }
+);
+
+export const updateCurrentJourneyAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    journey: Partial<Omit<LocalJourney, "nodes" | "edges">>,
+    options?: { immediate?: boolean }
+  ) => {
+    const currentJourney = get(currentJourneyAtom);
+    if (!currentJourney) {
+      return;
+    }
+    set(currentJourneyAtom, { ...currentJourney, ...journey });
+    await set(autosaveAtom, options);
+  }
+);
+
 // Autosave atom that handles saving journey state to local storage
 export const autosaveAtom = atom(
   null,
   async (get, set, options?: { immediate?: boolean }) => {
-    const journeyId = get(currentJourneyIdAtom);
+    const currentJourney = get(currentJourneyAtom);
     const nodes = get(nodesAtom);
     const edges = get(edgesAtom);
 
     // Only autosave if we have a journey ID
-    if (!journeyId) {
+    if (!currentJourney?.id) {
       return;
     }
 
     const saveFunc = async () => {
       try {
         // Save to local IndexedDB
-        const resp = await updateLocalJourney(journeyId, { nodes, edges });
-        if (!resp) {
+        const resp = await updateLocalJourney(currentJourney.id, {
+          ...currentJourney,
+          nodes,
+          edges,
+        });
+        if (!resp && currentJourney.isOwner) {
           await createLocalJourney({
-            id: journeyId,
-            name: get(currentJourneyNameAtom),
-            description: "",
+            ...currentJourney,
             nodes,
             edges,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isOwner: true,
-            isDirty: false,
-            visibility: get(currentJourneyVisibilityAtom),
           });
         }
         // Clear the unsaved changes indicator after successful save
         set(hasUnsavedChangesAtom, false);
         // Trigger debounced sync to server (if authenticated)
-        debouncedSync(journeyId);
+        debouncedSync(currentJourney.id);
       } catch (error) {
         console.error("Local autosave failed:", error);
       }
@@ -147,7 +177,6 @@ export const autosaveAtom = atom(
 
 export const journeyAtomFamily = atomFamily((journeyId: string) =>
   atom(async () => {
-    console.log("Loading journey", journeyId);
     const journey = await getLocalJourney(journeyId);
     return journey;
   })
@@ -434,32 +463,6 @@ export const loadJourneyAtom = atom(null, async (_get, set) => {
     set(isLoadingAtom, false);
   }
 });
-
-// Save journey with a name - now uses local storage
-export const saveJourneyAsAtom = atom(
-  null,
-  async (
-    get,
-    _set,
-    { name, description }: { name: string; description?: string }
-  ) => {
-    const nodes = get(nodesAtom);
-    const edges = get(edgesAtom);
-
-    try {
-      const journey = await createLocalJourney({
-        name,
-        description: description || "",
-        nodes,
-        edges,
-      });
-      return journey;
-    } catch (error) {
-      console.error("Failed to save journey:", error);
-      throw error;
-    }
-  }
-);
 
 // Journey toolbar UI state atoms
 export const showClearDialogAtom = atom(false);

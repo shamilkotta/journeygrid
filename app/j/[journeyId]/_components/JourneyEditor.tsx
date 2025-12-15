@@ -8,27 +8,29 @@ import { NotFoundFallback } from "@/components/ui-state";
 import { NodeConfigPanel } from "@/components/workflow/node-config-panel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { api } from "@/lib/api-client";
-import { LocalJourney, updateLocalJourney } from "@/lib/local-db";
+import {
+  LocalJourney,
+  getAllLocalJourneys,
+  updateLocalJourney,
+} from "@/lib/local-db";
 import {
   clearHistoryAtom,
-  currentJourneyIdAtom,
-  currentJourneyNameAtom,
-  currentJourneyVisibilityAtom,
   edgesAtom,
   hasSidebarBeenShownAtom,
   hasUnsavedChangesAtom,
   isGeneratingAtom,
-  isJourneyOwnerAtom,
   isPanelAnimatingAtom,
   isSavingAtom,
   isSidebarCollapsedAtom,
   type JourneyNode,
-  type JourneyVisibility,
   journeyNotFoundAtom,
   nodesAtom,
   rightPanelWidthAtom,
   journeyAtomFamily,
+  currentJourneyAtom,
+  setCurrentJourneyAtom,
   autosaveAtom,
+  allJourneysAtom,
 } from "@/lib/workflow-store";
 
 type JourneyEditorProps = {
@@ -46,12 +48,10 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
   const [_isSaving, setIsSaving] = useAtom(isSavingAtom);
   const [nodes] = useAtom(nodesAtom);
   const [edges] = useAtom(edgesAtom);
-  const [currentJourneyId] = useAtom(currentJourneyIdAtom);
-  const currentJourneyName = useAtomValue(currentJourneyNameAtom);
+  const currentJourney = useAtomValue(currentJourneyAtom);
+  const setCurrentJourney = useSetAtom(setCurrentJourneyAtom);
   const setNodes = useSetAtom(nodesAtom);
   const setEdges = useSetAtom(edgesAtom);
-  const setCurrentJourneyId = useSetAtom(currentJourneyIdAtom);
-  const setCurrentJourneyName = useSetAtom(currentJourneyNameAtom);
   const setHasUnsavedChanges = useSetAtom(hasUnsavedChangesAtom);
   const [journeyNotFound, setJourneyNotFound] = useAtom(journeyNotFoundAtom);
   const setRightPanelWidth = useSetAtom(rightPanelWidthAtom);
@@ -60,10 +60,9 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
     hasSidebarBeenShownAtom
   );
   const [panelCollapsed, setPanelCollapsed] = useAtom(isSidebarCollapsedAtom);
-  const setCurrentJourneyVisibility = useSetAtom(currentJourneyVisibilityAtom);
-  const setIsJourneyOwner = useSetAtom(isJourneyOwnerAtom);
   const clearHistory = useSetAtom(clearHistoryAtom);
   const triggerAutosave = useSetAtom(autosaveAtom);
+  const setAllJourneys = useSetAtom(allJourneysAtom);
 
   // Panel width state for resizing
   const [panelWidth, setPanelWidth] = useState(30); // default percentage
@@ -222,8 +221,6 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
   const generateJourneyFromAI = useCallback(
     async (prompt: string) => {
       setIsGenerating(true);
-      setCurrentJourneyId(journeyId);
-      setCurrentJourneyName("AI Generated Journey");
 
       try {
         const journeyData = await api.ai.generate(prompt);
@@ -234,7 +231,6 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
         );
         setNodes(nodesWithoutSelection);
         setEdges(journeyData.edges || []);
-        setCurrentJourneyName(journeyData.name || "AI Generated Journey");
 
         // Save to local storage
         await updateLocalJourney(journeyId, {
@@ -250,18 +246,11 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
         setIsGenerating(false);
       }
     },
-    [
-      journeyId,
-      setIsGenerating,
-      setCurrentJourneyId,
-      setCurrentJourneyName,
-      setNodes,
-      setEdges,
-    ]
+    [journeyId, setIsGenerating, setNodes, setEdges]
   );
 
   // Helper function to load existing journey from local storage
-  const loadExistingJourney = useCallback(() => {
+  const loadExistingJourney = useCallback(async () => {
     if (!localJourney) {
       setJourneyNotFound(true);
       return;
@@ -278,28 +267,20 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
       })
     );
 
-    setNodes(nodesWithoutSelection);
-    setEdges(localJourney.edges);
-    setCurrentJourneyId(localJourney.id);
-    setCurrentJourneyName(localJourney.name);
-    setCurrentJourneyVisibility(
-      (localJourney.visibility as JourneyVisibility) ?? "private"
-    );
-    setIsJourneyOwner(localJourney.isOwner);
+    await setCurrentJourney({ ...localJourney, nodes: nodesWithoutSelection });
     setHasUnsavedChanges(false);
     setJourneyNotFound(false);
-    triggerAutosave({ immediate: true });
+    // New journey opened
+    if (journey) {
+      const allJourneys = await getAllLocalJourneys();
+      setAllJourneys(allJourneys);
+    }
   }, [
     journeyId,
     clearHistory,
-    setNodes,
-    setEdges,
-    setCurrentJourneyId,
-    setCurrentJourneyName,
-    setCurrentJourneyVisibility,
-    setIsJourneyOwner,
     setHasUnsavedChanges,
     setJourneyNotFound,
+    setCurrentJourney,
   ]);
 
   useEffect(() => {
@@ -308,20 +289,20 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
 
   // Update page title when journey name changes
   useEffect(() => {
-    if (currentJourneyName) {
-      document.title = currentJourneyName;
+    if (currentJourney?.name) {
+      document.title = currentJourney.name;
     }
-  }, [currentJourneyName]);
+  }, [currentJourney?.name]);
 
   // Keyboard shortcuts - save to local storage
   const handleSave = useCallback(async () => {
-    if (!currentJourneyId || isGenerating) {
+    if (!currentJourney?.id || isGenerating) {
       return;
     }
     setIsSaving(true);
     try {
       // Save to local IndexedDB
-      await updateLocalJourney(currentJourneyId, { nodes, edges });
+      await triggerAutosave({ immediate: true });
       setHasUnsavedChanges(false);
       toast.success("Journey saved");
     } catch (error) {
@@ -331,7 +312,7 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
       setIsSaving(false);
     }
   }, [
-    currentJourneyId,
+    currentJourney?.id,
     nodes,
     edges,
     isGenerating,

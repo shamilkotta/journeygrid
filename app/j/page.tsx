@@ -24,12 +24,11 @@ export default async function NewJourneyPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const journeyId = generateId();
 
   if (!session?.user) {
-    redirect(`/j/${journeyId}`);
+    redirect(`/`);
   }
-
+  const journeyId = generateId();
   const node = createDefaultMilestoneNode();
   const [newJourney] = await db
     .insert(journeys)

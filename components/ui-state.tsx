@@ -1,13 +1,18 @@
+"use client";
+
 import {
-  RotateCcw,
   CircleX,
   CircleAlert,
   SquareDashedMousePointer,
   LoaderCircle,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WorkflowSkeleton } from "@/components/workflow-skeleton";
 import Link from "next/link";
+import { useTransition } from "react";
+import { createNewJourney } from "@/lib/actions";
+import { Spinner } from "./ui/spinner";
 
 export function LoadingFallback() {
   return (
@@ -54,9 +59,9 @@ export function LoadingFallback() {
                 asChild
                 className="bg-white text-black hover:bg-zinc-200 animate-fade-in opacity-0"
               >
-                <Link href="/new" className="flex items-center gap-2">
-                  <SquareDashedMousePointer className="h-4 w-4" />
-                  <span>Create New Journey</span>
+                <Link href="/" className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span>Go To Home</span>
                 </Link>
               </Button>
             </div>
@@ -69,11 +74,17 @@ export function LoadingFallback() {
 
 export const ErrorFallback = ({
   error,
-  reset,
 }: {
   error: Error;
   reset: () => void;
 }) => {
+  const [pending, startTransition] = useTransition();
+  const handleCreateNewJourney = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (pending) return;
+    startTransition(createNewJourney);
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 bottom-0 w-dvw h-dvh inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div className="w-full max-w-3xl animate-in fade-in-0 zoom-in-95 duration-300">
@@ -114,17 +125,27 @@ export const ErrorFallback = ({
             </p>
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={reset}
-                className="border-zinc-700 bg-transparent text-white hover:bg-zinc-900"
-              >
-                <RotateCcw className="mr-1 h-4 w-4" />
-                Try Again
-              </Button>
               <Button asChild className="bg-white text-black hover:bg-zinc-200">
-                <Link href="/new" className="flex items-center gap-2">
-                  <SquareDashedMousePointer className="h-4 w-4" />
+                <Link href="/" className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span>Home</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-white text-black hover:bg-zinc-200"
+                disabled={pending}
+              >
+                <Link
+                  href="/new"
+                  onClick={handleCreateNewJourney}
+                  className="flex items-center gap-2"
+                >
+                  {pending ? (
+                    <Spinner className="size-4" />
+                  ) : (
+                    <SquareDashedMousePointer className="h-4 w-4" />
+                  )}
                   <span>Create New Journey</span>
                 </Link>
               </Button>
@@ -137,6 +158,13 @@ export const ErrorFallback = ({
 };
 
 export const NotFoundFallback = () => {
+  const [pending, startTransition] = useTransition();
+  const handleCreateNewJourney = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (pending) return;
+    startTransition(createNewJourney);
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 bottom-0 w-dvw h-dvh inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div className="w-full max-w-3xl animate-in fade-in-0 zoom-in-95 duration-300">
@@ -178,8 +206,26 @@ export const NotFoundFallback = () => {
 
             <div className="flex gap-3">
               <Button asChild className="bg-white text-black hover:bg-zinc-200">
-                <Link href="/new" className="flex items-center gap-2">
-                  <SquareDashedMousePointer className="h-4 w-4" />
+                <Link href="/" className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span>Home</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-white text-black hover:bg-zinc-200"
+                disabled={pending}
+              >
+                <Link
+                  href="/new"
+                  onClick={handleCreateNewJourney}
+                  className="flex items-center gap-2"
+                >
+                  {pending ? (
+                    <Spinner className="size-4" />
+                  ) : (
+                    <SquareDashedMousePointer className="h-4 w-4" />
+                  )}
                   <span>Create New Journey</span>
                 </Link>
               </Button>

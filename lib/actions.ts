@@ -1,10 +1,12 @@
-import { nanoid } from "nanoid";
+"use server";
+
 import { headers } from "next/headers";
+import { auth } from "./auth";
+import { db } from "./db";
+import { nanoid } from "nanoid";
+import { generateId } from "./utils/id";
+import { journeys } from "./db/schema";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { journeys } from "@/lib/db/schema";
-import { generateId } from "@/lib/utils/id";
 
 function createDefaultMilestoneNode() {
   return {
@@ -20,23 +22,30 @@ function createDefaultMilestoneNode() {
   };
 }
 
-export default async function NewJourneyPage() {
+export const createNewJourney = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-
-  if (!session?.user) {
-    redirect(`/`);
+  let user = session?.user;
+  if (!user) {
+    console.log("reached ehre.........");
+    const result = await auth.api.signInAnonymous({
+      headers: await headers(),
+    });
+    if (!result?.user) {
+      throw new Error("Failed to create journey. Please try again.");
+    }
+    user = result.user;
   }
-
-  const journeyId = generateId();
+  console.log({ user });
   const node = createDefaultMilestoneNode();
+  const journeyId = generateId();
   const [newJourney] = await db
     .insert(journeys)
     .values({
       id: journeyId,
       name: "Untitled Journey",
-      userId: session.user.id,
+      userId: user.id,
       nodes: [node],
       edges: [],
       visibility: "private",
@@ -44,4 +53,4 @@ export default async function NewJourneyPage() {
     .returning();
 
   redirect(`/j/${newJourney.id}`);
-}
+};

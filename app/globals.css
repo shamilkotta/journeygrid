@@ -44,7 +44,7 @@
 }
 
 @theme {
-  --animate-fade-in: 1s fade-in 2s ease-in-out forwards;
+  --animate-fade-in: 1s fade-in 6s ease-in-out forwards;
 
   @keyframes fade-in {
     0% {

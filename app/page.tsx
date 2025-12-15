@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 
 import {
-  currentJourneyNameAtom,
   edgesAtom,
   hasSidebarBeenShownAtom,
   type JourneyNode,
@@ -16,7 +15,6 @@ const Home = () => {
   const router = useRouter();
   const setNodes = useSetAtom(nodesAtom);
   const setEdges = useSetAtom(edgesAtom);
-  const setCurrentJourneyName = useSetAtom(currentJourneyNameAtom);
   const setHasSidebarBeenShown = useSetAtom(hasSidebarBeenShownAtom);
 
   // Reset sidebar animation state when on homepage
@@ -45,8 +43,7 @@ const Home = () => {
     };
     setNodes([addNodePlaceholder]);
     setEdges([]);
-    setCurrentJourneyName("New Journey");
-  }, [setNodes, setEdges, setCurrentJourneyName, handleAddNode]);
+  }, [setNodes, setEdges, handleAddNode]);
 
   // Canvas and toolbar are rendered by PersistentCanvas in the layout
   return null;

@@ -38,9 +38,8 @@ export type LocalJourney = {
   createdAt: string;
   updatedAt: string;
   isOwner: boolean;
-  // Sync tracking - same ID is used locally and on server
-  syncedAt?: string; // If set, journey exists on server
-  isDirty?: boolean; // Has unsynced local changes
+  syncedAt?: string;
+  isDirty?: boolean;
 };
 
 const DB_NAME = "journey-builder";
@@ -77,29 +76,21 @@ async function getDB(): Promise<IDBPDatabase<JourneyDBSchema>> {
 
 // Create a new journey
 export async function createLocalJourney(
-  data: Partial<LocalJourney>
+  data: LocalJourney
 ): Promise<LocalJourney> {
   const db = await getDB();
   const now = new Date().toISOString();
 
-  // Generate default name with index if not provided
-  let journeyName = data.name;
-  if (!journeyName || journeyName === "Untitled Journey") {
-    const allJourneys = await db.getAll("journeys");
-    const journeyCount = allJourneys.length;
-    journeyName = `Untitled Journey ${journeyCount + 1}`;
-  }
-
   const journey: LocalJourney = {
     id: data.id || nanoid(),
-    userId: "",
-    name: journeyName,
+    userId: data.userId,
+    name: data.name,
     description: data.description || "",
     nodes: data.nodes || [],
     edges: data.edges || [],
     visibility: data.visibility || "private",
     createdAt: data.createdAt || now,
-    updatedAt: now,
+    updatedAt: data.updatedAt || now,
     isOwner: true,
     isDirty: true,
   };
@@ -136,9 +127,21 @@ export async function updateLocalJourney(
     return;
   }
 
-  const updated: LocalJourney = {
+  const updatedAt = new Date(data.updatedAt || new Date().toISOString());
+  const existUpdatedAt = new Date(existing.updatedAt);
+  let payload = {
     ...existing,
     ...data,
+  };
+  if (existUpdatedAt > updatedAt) {
+    payload = {
+      ...data,
+      ...existing,
+    };
+  }
+
+  const updated: LocalJourney = {
+    ...payload,
     id, // Ensure ID doesn't change
     updatedAt: new Date().toISOString(),
     isDirty: true,

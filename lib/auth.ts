@@ -11,6 +11,7 @@ import {
   users,
   verifications,
 } from "./db/schema";
+import { nextCookies } from "better-auth/next-js";
 
 // Construct schema object for drizzle adapter
 const schema = {
@@ -119,6 +120,7 @@ const plugins = [
         }),
       ]
     : []),
+  nextCookies(),
 ];
 
 export const auth = betterAuth({

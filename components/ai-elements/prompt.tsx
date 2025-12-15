@@ -12,7 +12,6 @@ import { api } from "@/lib/api-client";
 import { createLocalJourney, updateLocalJourney } from "@/lib/local-db";
 import {
   currentJourneyIdAtom,
-  currentJourneyNameAtom,
   edgesAtom,
   isGeneratingAtom,
   nodesAtom,
@@ -35,8 +34,7 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
   const nodes = useAtomValue(nodesAtom);
   const [edges, setEdges] = useAtom(edgesAtom);
   const [_nodes, setNodes] = useAtom(nodesAtom);
-  const [_currentJourneyId, setCurrentJourneyId] = useAtom(currentJourneyIdAtom);
-  const [_currentJourneyName, setCurrentJourneyName] = useAtom(currentJourneyNameAtom);
+  const _currentJourneyId = useAtomValue(currentJourneyIdAtom);
   const [_selectedNodeId, setSelectedNodeId] = useAtom(selectedNodeAtom);
   const { fitView } = useReactFlow();
 
@@ -51,7 +49,7 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
         e.preventDefault();
         inputRef.current?.focus();
       }
-    }
+    };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => {
@@ -109,10 +107,12 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
           prompt,
           (partialData) => {
             // Update UI incrementally with animated edges
-            const edgesWithAnimatedType = (partialData.edges || []).map((edge) => ({
-              ...edge,
-              type: "animated",
-            }));
+            const edgesWithAnimatedType = (partialData.edges || []).map(
+              (edge) => ({
+                ...edge,
+                type: "animated",
+              })
+            );
 
             // No special validation needed for journeys
             let validEdges = edgesWithAnimatedType;
@@ -166,7 +166,10 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
           setCurrentJourneyId(workflowId);
 
           console.log("[AI Prompt] Updating existing journey:", workflowId);
-          console.log("[AI Prompt] Has existingJourney context:", !!existingJourney);
+          console.log(
+            "[AI Prompt] Has existingJourney context:",
+            !!existingJourney
+          );
 
           // State already updated by streaming callback
           if (existingJourney) {
@@ -248,7 +251,10 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
           className="relative flex items-center gap-2 rounded-lg border bg-background pl-3 pr-2 py-2 shadow-lg cursor-text"
           onClick={(e) => {
             // Focus textarea when clicking anywhere in the form (including padding)
-            if (e.target === e.currentTarget || (e.target as HTMLElement).tagName !== 'BUTTON') {
+            if (
+              e.target === e.currentTarget ||
+              (e.target as HTMLElement).tagName !== "BUTTON"
+            ) {
               inputRef.current?.focus();
             }
           }}
@@ -262,7 +268,10 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
           role="search"
         >
           {isGenerating && prompt ? (
-            <Shimmer className="flex-1 text-sm whitespace-pre-wrap" duration={2}>
+            <Shimmer
+              className="flex-1 text-sm whitespace-pre-wrap"
+              duration={2}
+            >
               {prompt}
             </Shimmer>
           ) : (
@@ -273,15 +282,15 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
               onBlur={handleBlur}
               onChange={(e) => {
                 setPrompt(e.target.value);
-                e.target.style.height = 'auto';
+                e.target.style.height = "auto";
                 e.target.style.height = `${e.target.scrollHeight}px`;
               }}
               onFocus={handleFocus}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleGenerate(e as any);
-                } else if (e.key === 'Escape') {
+                } else if (e.key === "Escape") {
                   e.preventDefault();
                   setPrompt("");
                   setIsExpanded(false);
@@ -289,7 +298,11 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
                   inputRef.current?.blur();
                 }
               }}
-              placeholder={isFocused ? "Describe your journey with natural language..." : "Ask AI..."}
+              placeholder={
+                isFocused
+                  ? "Describe your journey with natural language..."
+                  : "Ask AI..."
+              }
               ref={inputRef}
               rows={1}
               value={prompt}
@@ -305,25 +318,50 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
               onClick={() => inputRef.current?.focus()}
               style={
                 !prompt.trim() && !isGenerating && !isFocused
-                  ? { opacity: 1, filter: "blur(0px)", pointerEvents: "auto", visibility: "visible" }
-                  : { opacity: 0, filter: "blur(2px)", pointerEvents: "none", visibility: "hidden" }
+                  ? {
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      pointerEvents: "auto",
+                      visibility: "visible",
+                    }
+                  : {
+                      opacity: 0,
+                      filter: "blur(2px)",
+                      pointerEvents: "none",
+                      visibility: "hidden",
+                    }
               }
               type="button"
               variant="ghost"
             >
-              <kbd aria-hidden="true" className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              <kbd
+                aria-hidden="true"
+                className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"
+              >
                 <span className="text-xs">⌘</span>K
               </kbd>
             </Button>
             <Button
-              aria-label={isGenerating ? "Generating journey..." : "Generate journey"}
+              aria-label={
+                isGenerating ? "Generating journey..." : "Generate journey"
+              }
               className="size-8 transition-[opacity,filter] ease-out shrink-0"
               disabled={!prompt.trim() || isGenerating}
               size="sm"
               style={
                 !prompt.trim() && !isGenerating && !isFocused
-                  ? { opacity: 0, filter: "blur(2px)", pointerEvents: "none", visibility: "hidden" }
-                  : { opacity: 1, filter: "blur(0px)", pointerEvents: "auto", visibility: "visible" }
+                  ? {
+                      opacity: 0,
+                      filter: "blur(2px)",
+                      pointerEvents: "none",
+                      visibility: "hidden",
+                    }
+                  : {
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      pointerEvents: "auto",
+                      visibility: "visible",
+                    }
               }
               type="submit"
             >
@@ -335,4 +373,3 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
     </>
   );
 }
-

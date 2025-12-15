@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -70,14 +70,11 @@ import {
   canUndoAtom,
   clearWorkflowAtom,
   currentJourneyIdAtom,
-  currentJourneyNameAtom,
-  currentJourneyVisibilityAtom,
   deleteEdgeAtom,
   deleteNodeAtom,
   edgesAtom,
   hasUnsavedChangesAtom,
   isGeneratingAtom,
-  isJourneyOwnerAtom,
   isSavingAtom,
   type JourneyEdge,
   type JourneyListItem,
@@ -92,12 +89,16 @@ import {
   showDeleteDialogAtom,
   undoAtom,
   updateNodeDataAtom,
+  currentJourneyAtom,
+  updateCurrentJourneyAtom,
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
 import { Logo } from "../logo";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
 import Link from "next/link";
+import { createNewJourney } from "@/lib/actions";
+import { Spinner } from "../ui/spinner";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -230,7 +231,7 @@ function getMissingIntegrations(
 
 // Hook for journey handlers
 type JourneyHandlerParams = {
-  currentJourneyId: string | null;
+  currentJourneyId?: string | null;
   nodes: JourneyNode[];
   edges: JourneyEdge[];
   setIsSaving: (value: boolean) => void;
@@ -275,12 +276,9 @@ function useJourneyState() {
   const [isGenerating] = useAtom(isGeneratingAtom);
   const clearWorkflow = useSetAtom(clearWorkflowAtom);
   const updateNodeData = useSetAtom(updateNodeDataAtom);
-  const [currentJourneyId] = useAtom(currentJourneyIdAtom);
-  const [journeyName, setCurrentJourneyName] = useAtom(currentJourneyNameAtom);
-  const [journeyVisibility, setJourneyVisibility] = useAtom(
-    currentJourneyVisibilityAtom
-  );
-  const isOwner = useAtomValue(isJourneyOwnerAtom);
+  const currentJourneyId = useAtomValue(currentJourneyIdAtom);
+  const updateCurrentJourney = useSetAtom(updateCurrentJourneyAtom);
+
   const router = useRouter();
   const [showClearDialog, setShowClearDialog] = useAtom(showClearDialogAtom);
   const [showDeleteDialog, setShowDeleteDialog] = useAtom(showDeleteDialogAtom);
@@ -296,6 +294,7 @@ function useJourneyState() {
   const { data: session } = useSession();
   const setActiveTab = useSetAtom(propertiesPanelActiveTabAtom);
   const setSelectedNodeId = useSetAtom(selectedNodeAtom);
+  const currentJourney = useAtomValue(currentJourneyAtom);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
@@ -303,12 +302,6 @@ function useJourneyState() {
   const [showMakePublicDialog, setShowMakePublicDialog] = useState(false);
   const [allJourneys, setAllJourneys] = useAtom(allJourneysAtom);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
-  const [newJourneyName, setNewJourneyName] = useState(journeyName);
-
-  // Sync newJourneyName when journeyName changes
-  useEffect(() => {
-    setNewJourneyName(journeyName);
-  }, [journeyName]);
 
   // Load all journeys from local storage on mount
   useEffect(() => {
@@ -330,11 +323,7 @@ function useJourneyState() {
     clearWorkflow,
     updateNodeData,
     currentJourneyId,
-    journeyName,
-    setCurrentJourneyName,
-    journeyVisibility,
-    setJourneyVisibility,
-    isOwner,
+    currentJourney,
     router,
     showClearDialog,
     setShowClearDialog,
@@ -362,12 +351,11 @@ function useJourneyState() {
     setAllWorkflows: setAllJourneys,
     showRenameDialog,
     setShowRenameDialog,
-    newJourneyName,
-    setNewJourneyName,
     setActiveTab,
     setNodes,
     setEdges,
     setSelectedNodeId,
+    updateCurrentJourney,
   };
 }
 
@@ -375,7 +363,7 @@ function useJourneyState() {
 function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
   const {
     currentJourneyId,
-    journeyName,
+    currentJourney,
     nodes,
     edges,
     setIsSaving,
@@ -383,16 +371,10 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
     setShowClearDialog,
     clearWorkflow,
     setShowDeleteDialog,
-    setCurrentJourneyName,
-    setJourneyVisibility,
-    setAllWorkflows,
-    newJourneyName,
-    setShowRenameDialog,
-    setIsDownloading,
     setIsDuplicating,
     setShowMakePublicDialog,
+    updateCurrentJourney,
     router,
-    session,
   } = state;
 
   const { handleSave } = useJourneyHandlers({
@@ -425,26 +407,7 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
     }
   };
 
-  const handleRenameJourney = async () => {
-    if (!(currentJourneyId && newJourneyName.trim())) {
-      return;
-    }
-
-    try {
-      // Update in local IndexedDB
-      await updateLocalJourney(currentJourneyId, {
-        name: newJourneyName,
-      });
-      setShowRenameDialog(false);
-      setCurrentJourneyName(newJourneyName);
-      toast.success("Journey renamed successfully");
-      const journeys = await getAllLocalJourneys();
-      setAllWorkflows(journeys);
-    } catch (error) {
-      console.error("Failed to rename journey:", error);
-      toast.error("Failed to rename journey. Please try again.");
-    }
-  };
+  const handleRenameJourney = async () => {};
 
   const handleDownload = async () => {
     toast.error("Download feature not available for journeys");
@@ -464,10 +427,7 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
     // Switch to private immediately (no risks)
     try {
       // Update in local IndexedDB
-      await updateLocalJourney(currentJourneyId, {
-        visibility: newVisibility,
-      });
-      setJourneyVisibility(newVisibility);
+      await updateCurrentJourney({ visibility: newVisibility });
       toast.success("Journey is now private");
     } catch (error) {
       console.error("Failed to update visibility:", error);
@@ -482,10 +442,7 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
 
     try {
       // Update in local IndexedDB
-      await updateLocalJourney(currentJourneyId, {
-        visibility: "public",
-      });
-      setJourneyVisibility("public");
+      await updateCurrentJourney({ visibility: "public" });
       setShowMakePublicDialog(false);
       toast.success("Journey is now public");
     } catch (error) {
@@ -555,7 +512,7 @@ function ToolbarActions({
 
   // For non-owners viewing public journeys, don't show toolbar actions
   // (Duplicate button is now in the main toolbar next to Sign In)
-  if (workflowId && !state.isOwner) {
+  if (workflowId && !state.currentJourney?.isOwner) {
     return null;
   }
 
@@ -773,13 +730,13 @@ function ToolbarActions({
       {/* Save - Mobile Vertical */}
       <ButtonGroup className="flex lg:hidden" orientation="vertical">
         <SaveButton handleSave={actions.handleSave} state={state} />
-        <SyncStatusIndicator />
+        <SyncStatusIndicator currentJourneyId={state.currentJourneyId} />
       </ButtonGroup>
 
       {/* Save - Desktop Horizontal */}
       <ButtonGroup className="hidden lg:flex" orientation="horizontal">
         <SaveButton handleSave={actions.handleSave} state={state} />
-        <SyncStatusIndicator />
+        <SyncStatusIndicator currentJourneyId={state.currentJourneyId} />
       </ButtonGroup>
 
       {/* Visibility Toggle */}
@@ -818,7 +775,11 @@ function SaveButton({
 }
 
 // Sync Status Indicator Component
-function SyncStatusIndicator() {
+function SyncStatusIndicator({
+  currentJourneyId,
+}: {
+  currentJourneyId?: string;
+}) {
   const { status, isAuthenticated, triggerForceSync, isSyncing } = useSync();
 
   // Don't show if not authenticated
@@ -864,8 +825,8 @@ function SyncStatusIndicator() {
 
   return (
     <Button
-      className="border hover:bg-black/5 dark:hover:bg-white/5"
-      disabled={isSyncing}
+      className="relative border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
+      disabled={!currentJourneyId || isSyncing}
       onClick={handleClick}
       size="icon"
       title={getStatusTitle()}
@@ -893,14 +854,18 @@ function VisibilityButton({
   state: ReturnType<typeof useJourneyState>;
   actions: ReturnType<typeof useJourneyActions>;
 }) {
-  const isPublic = state.journeyVisibility === "public";
+  const isPublic = state.currentJourney?.visibility === "public";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className="border hover:bg-black/5 dark:hover:bg-white/5"
-          disabled={!state.currentJourneyId || state.isGenerating}
+          className="relative border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
+          disabled={
+            !state.currentJourneyId ||
+            state.isGenerating ||
+            !state.session?.user
+          }
           size="icon"
           title={isPublic ? "Public journey" : "Private journey"}
           variant="secondary"
@@ -971,6 +936,13 @@ function WorkflowMenuComponent({
   state: ReturnType<typeof useJourneyState>;
   actions: ReturnType<typeof useJourneyActions>;
 }) {
+  const [pending, startTransition] = useTransition();
+  const handleNewJourney = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    if (pending) return;
+    startTransition(createNewJourney);
+  };
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex h-9 max-w-[160px] items-center overflow-hidden rounded-md border bg-secondary text-secondary-foreground sm:max-w-none">
@@ -979,7 +951,7 @@ function WorkflowMenuComponent({
             <Flag className="size-4 shrink-0" />
             <p className="truncate font-medium text-sm">
               {workflowId ? (
-                state.journeyName
+                state.currentJourney?.name
               ) : (
                 <>
                   <span className="sm:hidden">New</span>
@@ -994,9 +966,13 @@ function WorkflowMenuComponent({
               asChild
               className="flex items-center justify-between"
             >
-              <Link href="/new">
+              <Link href="/new" onClick={handleNewJourney}>
                 New Journey{" "}
-                {!workflowId && <Check className="size-4 shrink-0" />}
+                {pending ? (
+                  <Spinner className="size-4 animate-spin" />
+                ) : (
+                  !workflowId && <Check className="size-4 shrink-0" />
+                )}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -1021,7 +997,7 @@ function WorkflowMenuComponent({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {workflowId && !state.isOwner && (
+      {workflowId && !state.currentJourney?.isOwner && (
         <span className="text-muted-foreground text-xs uppercase lg:hidden">
           Read-only
         </span>
@@ -1100,9 +1076,9 @@ function WorkflowDialogsComponent({
               </Label>
               <Input
                 id="journey-name"
-                onChange={(e) => state.setNewJourneyName(e.target.value)}
+                onChange={(e) => {}}
                 placeholder="Enter journey name"
-                value={state.newJourneyName}
+                value={""}
               />
             </div>
             <DialogFooter>
@@ -1113,7 +1089,7 @@ function WorkflowDialogsComponent({
               >
                 Cancel
               </Button>
-              <Button disabled={!state.newJourneyName.trim()} type="submit">
+              <Button disabled={!false} type="submit">
                 Rename
               </Button>
             </DialogFooter>
@@ -1129,7 +1105,8 @@ function WorkflowDialogsComponent({
           <DialogHeader>
             <DialogTitle>Delete Journey</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &ldquo;{state.journeyName}
+              Are you sure you want to delete &ldquo;
+              {state.currentJourney?.name}
               &rdquo;? This will permanently delete the journey. This cannot be
               undone.
             </DialogDescription>
@@ -1201,7 +1178,7 @@ export const WorkflowToolbar = ({ workflowId }: WorkflowToolbarProps) => {
             state={state}
             workflowId={workflowId}
           />
-          {workflowId && !state.isOwner && (
+          {workflowId && !state.currentJourney?.isOwner && (
             <span className="hidden text-muted-foreground text-xs uppercase lg:inline">
               Read-only
             </span>
@@ -1217,7 +1194,7 @@ export const WorkflowToolbar = ({ workflowId }: WorkflowToolbarProps) => {
             workflowId={workflowId}
           />
           <div className="flex items-center gap-2">
-            {workflowId && !state.isOwner && (
+            {workflowId && !state.currentJourney?.isOwner && (
               <DuplicateButton
                 isDuplicating={state.isDuplicating}
                 onDuplicate={actions.handleDuplicate}
