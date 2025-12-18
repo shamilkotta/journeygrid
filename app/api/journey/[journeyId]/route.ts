@@ -147,8 +147,6 @@ export async function PATCH(
       .where(eq(journeys.id, journeyId))
       .returning();
 
-    console.log({ update: updatedJourney, updateData });
-
     if (!updatedJourney) {
       return NextResponse.json({ error: "Journey not found" }, { status: 404 });
     }

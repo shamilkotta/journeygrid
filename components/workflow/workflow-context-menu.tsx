@@ -15,6 +15,7 @@ import {
   propertiesPanelActiveTabAtom,
   selectedNodeAtom,
 } from "@/lib/workflow-store";
+import { usePathname } from "next/navigation";
 
 export type ContextMenuType = "node" | "edge" | "pane" | null;
 
@@ -42,6 +43,7 @@ export function WorkflowContextMenu({
   const setSelectedNode = useSetAtom(selectedNodeAtom);
   const setActiveTab = useSetAtom(propertiesPanelActiveTabAtom);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathName = usePathname();
 
   const handleDeleteNode = useCallback(() => {
     if (menuState?.nodeId) {
@@ -123,12 +125,12 @@ export function WorkflowContextMenu({
   // Check if the node is a milestone (can't be deleted)
   const isMilestoneNode = Boolean(
     menuState.nodeId &&
-      nodes.find((n) => n.id === menuState.nodeId)?.data.type === "milestone"
+    nodes.find((n) => n.id === menuState.nodeId)?.data.type === "milestone"
   );
 
   const isAddNode = Boolean(
     menuState.nodeId &&
-      nodes.find((n) => n.id === menuState.nodeId)?.type === "add"
+    nodes.find((n) => n.id === menuState.nodeId)?.type === "add"
   );
 
   const getNodeLabel = () => {
@@ -139,7 +141,7 @@ export function WorkflowContextMenu({
     return node?.data.label || "Step";
   };
 
-  if (isAddNode) {
+  if (isAddNode || pathName === "/") {
     return null;
   }
 

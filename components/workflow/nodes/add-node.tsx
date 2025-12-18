@@ -1,7 +1,7 @@
 "use client";
 
 import type { NodeProps } from "@xyflow/react";
-import { Plus } from "lucide-react";
+import { SquareDashedMousePointer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTransition } from "react";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,7 +21,7 @@ export function AddNode({ data }: NodeProps & { data?: AddNodeData }) {
   return (
     <div className="flex flex-col items-center justify-center gap-8 rounded-lg border border-border border-dashed bg-background/50 p-8 backdrop-blur-sm">
       <div className="text-center">
-        <h1 className="mb-2 font-bold text-3xl">journeygrid</h1>
+        <h1 className="mb-2 font-bold text-3xl">Journeygrid</h1>
         <p className="text-muted-foreground text-sm">
           Create journeys for your projects and learning paths
         </p>
@@ -32,8 +32,12 @@ export function AddNode({ data }: NodeProps & { data?: AddNodeData }) {
         size="default"
         disabled={pending}
       >
-        {pending ? <Spinner className="size-4" /> : <Plus className="size-4" />}
-        Add a Node
+        {pending ? (
+          <Spinner className="size-4" />
+        ) : (
+          <SquareDashedMousePointer className="h-4 w-4" />
+        )}
+        Start a new journey
       </Button>
     </div>
   );
