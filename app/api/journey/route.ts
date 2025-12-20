@@ -15,7 +15,12 @@ export async function GET(request: Request) {
     }
 
     const userJourneys = await db
-      .select()
+      .select({
+        id: journeys.id,
+        name: journeys.name,
+        updatedAt: journeys.updatedAt,
+        createdAt: journeys.createdAt,
+      })
       .from(journeys)
       .where(eq(journeys.userId, session.user.id))
       .orderBy(desc(journeys.updatedAt));
