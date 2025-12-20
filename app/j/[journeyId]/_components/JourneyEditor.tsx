@@ -8,11 +8,7 @@ import { NotFoundFallback } from "@/components/ui-state";
 import { NodeConfigPanel } from "@/components/workflow/node-config-panel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { api } from "@/lib/api-client";
-import {
-  LocalJourney,
-  getAllLocalJourneys,
-  updateLocalJourney,
-} from "@/lib/local-db";
+import { LocalJourney, updateLocalJourney } from "@/lib/local-db";
 import {
   clearHistoryAtom,
   edgesAtom,
@@ -30,7 +26,6 @@ import {
   currentJourneyAtom,
   setCurrentJourneyAtom,
   autosaveAtom,
-  allJourneysAtom,
 } from "@/lib/workflow-store";
 
 type JourneyEditorProps = {
@@ -62,7 +57,6 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
   const [panelCollapsed, setPanelCollapsed] = useAtom(isSidebarCollapsedAtom);
   const clearHistory = useSetAtom(clearHistoryAtom);
   const triggerAutosave = useSetAtom(autosaveAtom);
-  const setAllJourneys = useSetAtom(allJourneysAtom);
 
   // Panel width state for resizing
   const [panelWidth, setPanelWidth] = useState(30); // default percentage
@@ -271,10 +265,10 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
     setHasUnsavedChanges(false);
     setJourneyNotFound(false);
     // New journey opened
-    if (journey) {
-      const allJourneys = await getAllLocalJourneys();
-      setAllJourneys(allJourneys);
-    }
+    // if (journey) {
+    //   const allJourneys = await getAllLocalJourneys();
+    //   setAllJourneys(allJourneys);
+    // }
   }, [
     journeyId,
     clearHistory,

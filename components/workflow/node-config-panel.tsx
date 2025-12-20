@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getAllLocalJourneys, updateLocalJourney } from "@/lib/local-db";
 import {
   allJourneysAtom,
   currentJourneyAtom,
@@ -128,7 +127,7 @@ export const PanelInner = () => {
   const deleteSelectedItems = useSetAtom(deleteSelectedItemsAtom);
   const setShowClearDialog = useSetAtom(showClearDialogAtom);
   const setShowDeleteDialog = useSetAtom(showDeleteDialogAtom);
-  const setAllJourneys = useSetAtom(allJourneysAtom);
+  const [allJourneys, setAllJourneys] = useAtom(allJourneysAtom);
   const [showDeleteNodeAlert, setShowDeleteNodeAlert] = useState(false);
   const [showDeleteEdgeAlert, setShowDeleteEdgeAlert] = useState(false);
   const [activeTab, setActiveTab] = useAtom(propertiesPanelActiveTabAtom);
@@ -188,8 +187,13 @@ export const PanelInner = () => {
           { immediate: true }
         );
         // Refresh the journey list to update the dropdown
-        const journeys = await getAllLocalJourneys();
-        setAllJourneys(journeys);
+        setAllJourneys(
+          allJourneys.map((journey) =>
+            journey.id === currentJourneyId
+              ? { ...journey, name: newName }
+              : journey
+          )
+        );
       } catch (error) {
         console.error("Failed to update journey name:", error);
         toast.error("Failed to update journey name");

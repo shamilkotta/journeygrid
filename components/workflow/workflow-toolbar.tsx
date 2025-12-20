@@ -99,6 +99,7 @@ import { PanelInner } from "./node-config-panel";
 import Link from "next/link";
 import { Spinner } from "../ui/spinner";
 import { newJourney } from "@/app/api/journey/new";
+import { api } from "@/lib/api-client";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -308,8 +309,13 @@ function useJourneyState() {
   useEffect(() => {
     const loadAllJourneys = async () => {
       try {
-        const journeys = await getAllLocalJourneys();
-        setAllJourneys(journeys);
+        const allJourneys = await api.journey.getAll();
+        if (allJourneys && allJourneys.length > 0) {
+          setAllJourneys(allJourneys);
+        } else {
+          const journeys = await getAllLocalJourneys();
+          setAllJourneys(journeys);
+        }
       } catch (error) {
         console.error("Failed to load journeys:", error);
       }
