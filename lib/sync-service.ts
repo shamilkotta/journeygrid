@@ -5,7 +5,7 @@
  * Uses server-priority merge strategy with debounced syncing.
  */
 
-import { journeyApi, type SavedJourney } from "./api-client";
+import { journeyApi, JourneyData, type SavedJourney } from "./api-client";
 import {
   bulkUpsertFromServer,
   deleteJourneysNotInList,
@@ -14,14 +14,14 @@ import {
   getUnsyncedJourneys,
   type LocalJourney,
   markJourneySynced,
+  getAllLocalJourneys,
 } from "./local-db";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
 
 export type SyncResult = {
   success: boolean;
-  uploaded: number;
-  downloaded: number;
+  journeys: JourneyData[];
   errors: string[];
 };
 
@@ -86,7 +86,7 @@ export function getSyncStatus(): SyncStatus {
  * Convert server journey to local format
  */
 function serverToLocal(
-  server: SavedJourney
+  server: JourneyData
 ): Omit<LocalJourney, "isDirty" | "syncedAt"> {
   return {
     id: server.id,
@@ -97,6 +97,8 @@ function serverToLocal(
     visibility: server.visibility,
     createdAt: server.createdAt,
     updatedAt: server.updatedAt,
+    userId: server.userId,
+    isOwner: true,
   };
 }
 
@@ -149,6 +151,9 @@ export async function uploadNewToServer(): Promise<number> {
           nodes: journey.nodes,
           edges: journey.edges,
           visibility: journey.visibility,
+          createdAt: journey.createdAt,
+          updatedAt: journey.updatedAt,
+          userId: journey.userId,
         });
 
         // Mark as synced locally
@@ -261,8 +266,7 @@ export async function deleteJourney(id: string): Promise<boolean> {
 export async function syncAll(): Promise<SyncResult> {
   const result: SyncResult = {
     success: false,
-    uploaded: 0,
-    downloaded: 0,
+    journeys: [],
     errors: [],
   };
 
@@ -276,16 +280,23 @@ export async function syncAll(): Promise<SyncResult> {
   setSyncStatus("syncing");
 
   try {
-    // Step 1: Download all server journeys (server takes priority)
-    result.downloaded = await downloadFromServer();
-
-    // Step 2: Upload new local journeys (never synced before)
-    result.uploaded = await uploadNewToServer();
-
-    // Step 3: Upload dirty journeys (local changes to synced items)
-    result.uploaded += await uploadDirtyToServer();
+    // sync local journeys
+    const localJourneys = await getAllLocalJourneys();
+    const syncResult = await journeyApi.sync(
+      localJourneys.map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        nodes: r.nodes,
+        edges: r.edges,
+        visibility: r.visibility,
+        updatedAt: r.updatedAt,
+        createdAt: r.createdAt,
+      }))
+    );
 
     result.success = true;
+    result.journeys = syncResult.journeys;
     setSyncStatus("synced");
   } catch (error) {
     const errorMessage =

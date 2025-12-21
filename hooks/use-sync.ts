@@ -13,6 +13,8 @@ import {
   subscribeSyncStatus,
   syncAll,
 } from "@/lib/sync-service";
+import { allJourneysAtom } from "@/lib/workflow-store";
+import { useSetAtom } from "jotai";
 
 type UseSyncReturn = {
   // Current sync status
@@ -33,7 +35,7 @@ export function useSync(): UseSyncReturn {
   const { data: session, isPending } = useSession();
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus());
   const hasPerformedInitialSync = useRef(false);
-
+  const setAllJourneys = useSetAtom(allJourneysAtom);
   const isAuthenticated = !!session?.user && !isPending;
   const isSyncing = status === "syncing";
 
@@ -55,9 +57,10 @@ export function useSync(): UseSyncReturn {
     if (isAuthenticated && !hasPerformedInitialSync.current) {
       hasPerformedInitialSync.current = true;
       syncAll().then((result) => {
+        setAllJourneys(result.journeys);
         if (result.success) {
           console.log(
-            `[Sync] Initial sync complete: ${result.downloaded} downloaded, ${result.uploaded} uploaded`
+            `[Sync] Initial sync complete: ${result.journeys.length} journeys synced`
           );
         } else {
           console.error("[Sync] Initial sync failed:", result.errors);
@@ -106,8 +109,7 @@ export function useSync(): UseSyncReturn {
     if (!isAuthenticated) {
       return {
         success: false,
-        uploaded: 0,
-        downloaded: 0,
+        journeys: [],
         errors: ["Not authenticated"],
       };
     }

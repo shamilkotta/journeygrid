@@ -346,7 +346,7 @@ export const userApi = {
 // Journey API
 export const journeyApi = {
   // Get all journeys
-  getAll: () => apiCall<SavedJourney[]>("/api/journey"),
+  getAll: () => apiCall<JourneyData[]>("/api/journey"),
 
   // Get a specific journey
   getById: (id: string) => apiCall<JourneyData>(`/api/journey/${id}`),
@@ -493,15 +493,17 @@ export const journeyApi = {
     journeys: Array<{
       id: string;
       name: string;
-      description?: string;
+      description?: string | null;
       nodes: JourneyNode[];
       edges: JourneyEdge[];
       visibility?: JourneyVisibility;
+      updatedAt?: string;
     }>
   ) =>
     apiCall<{
       created: string[];
       updated: string[];
+      journeys: JourneyData[];
       errors: Array<{ id: string; error: string }>;
     }>("/api/journey/sync", {
       method: "POST",
