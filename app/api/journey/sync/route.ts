@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeys } from "@/lib/db/schema";
+import { JourneyData } from "@/lib/api-client";
+import { generateId } from "@/lib/utils/id";
 
 type SyncJourney = {
   id: string;
@@ -20,8 +22,7 @@ type SyncRequest = {
 };
 
 type SyncResponse = {
-  created: string[];
-  updated: string[];
+  journeys: Partial<JourneyData>[];
   errors: { id: string; error: string }[];
 };
 
@@ -45,8 +46,7 @@ export async function POST(request: Request) {
     }
 
     const response: SyncResponse = {
-      created: [],
-      updated: [],
+      journeys: [],
       errors: [],
     };
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
     // Check which ones already exist for this user
     const existingJourneys = await db
-      .select({ id: journeys.id })
+      .select({ id: journeys.id, updatedAt: journeys.updatedAt })
       .from(journeys)
       .where(
         and(eq(journeys.userId, session.user.id), inArray(journeys.id, syncIds))
@@ -68,27 +68,34 @@ export async function POST(request: Request) {
       try {
         if (existingIds.has(journey.id)) {
           // Update existing journey
-          await db
-            .update(journeys)
-            .set({
-              name: journey.name,
-              description: journey.description,
-              nodes: journey.nodes,
-              edges: journey.edges,
-              visibility: journey.visibility || "private",
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(journeys.id, journey.id),
-                eq(journeys.userId, session.user.id)
-              )
-            );
-          response.updated.push(journey.id);
+          const updatedJourney = existingJourneys.find(
+            (r) => r.id === journey.id
+          );
+          if (
+            journey.updatedAt &&
+            updatedJourney!.updatedAt < new Date(journey.updatedAt!)
+          ) {
+            await db
+              .update(journeys)
+              .set({
+                name: journey.name,
+                description: journey.description,
+                nodes: journey.nodes,
+                edges: journey.edges,
+                visibility: journey.visibility || "private",
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(journeys.id, journey.id),
+                  eq(journeys.userId, session.user.id)
+                )
+              );
+          }
         } else {
           // Create new journey
           await db.insert(journeys).values({
-            id: journey.id,
+            id: generateId(),
             name: journey.name,
             description: journey.description,
             nodes: journey.nodes,
@@ -96,7 +103,6 @@ export async function POST(request: Request) {
             visibility: journey.visibility || "private",
             userId: session.user.id,
           });
-          response.created.push(journey.id);
         }
       } catch (error) {
         response.errors.push({
@@ -105,6 +111,23 @@ export async function POST(request: Request) {
         });
       }
     }
+
+    const allJourneys = await db
+      .select({
+        id: journeys.id,
+        name: journeys.name,
+        createdAt: journeys.createdAt,
+        updatedAt: journeys.updatedAt,
+      })
+      .from(journeys)
+      .where(eq(journeys.userId, session.user.id));
+
+    response.journeys = allJourneys.map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
+    }));
 
     return NextResponse.json(response);
   } catch (error) {

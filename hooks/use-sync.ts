@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import {
   cancelPendingSync,
@@ -13,8 +13,6 @@ import {
   subscribeSyncStatus,
   syncAll,
 } from "@/lib/sync-service";
-import { allJourneysAtom } from "@/lib/workflow-store";
-import { useSetAtom } from "jotai";
 
 type UseSyncReturn = {
   // Current sync status
@@ -34,8 +32,6 @@ type UseSyncReturn = {
 export function useSync(): UseSyncReturn {
   const { data: session, isPending } = useSession();
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus());
-  const hasPerformedInitialSync = useRef(false);
-  const setAllJourneys = useSetAtom(allJourneysAtom);
   const isAuthenticated = !!session?.user && !isPending;
   const isSyncing = status === "syncing";
 
@@ -50,28 +46,6 @@ export function useSync(): UseSyncReturn {
   // Update authentication state in sync service
   useEffect(() => {
     setAuthenticatedState(isAuthenticated);
-  }, [isAuthenticated]);
-
-  // Perform initial sync when user logs in
-  useEffect(() => {
-    if (isAuthenticated && !hasPerformedInitialSync.current) {
-      hasPerformedInitialSync.current = true;
-      syncAll().then((result) => {
-        setAllJourneys(result.journeys);
-        if (result.success) {
-          console.log(
-            `[Sync] Initial sync complete: ${result.journeys.length} journeys synced`
-          );
-        } else {
-          console.error("[Sync] Initial sync failed:", result.errors);
-        }
-      });
-    }
-
-    // Reset flag when user logs out
-    if (!isAuthenticated) {
-      hasPerformedInitialSync.current = false;
-    }
   }, [isAuthenticated]);
 
   // Cancel pending syncs on unmount

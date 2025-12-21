@@ -15,7 +15,6 @@ import {
   Lock,
   Plus,
   Redo2,
-  RefreshCw,
   Save,
   Settings2,
   Trash2,
@@ -23,7 +22,7 @@ import {
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -100,6 +99,7 @@ import Link from "next/link";
 import { Spinner } from "../ui/spinner";
 import { newJourney } from "@/app/api/journey/new";
 import { api } from "@/lib/api-client";
+import { syncAll } from "@/lib/sync-service";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -1175,6 +1175,32 @@ function WorkflowDialogsComponent({
 export const WorkflowToolbar = ({ workflowId }: WorkflowToolbarProps) => {
   const state = useJourneyState();
   const actions = useJourneyActions(state);
+  const setAllJourneys = useSetAtom(allJourneysAtom);
+  const { data: session, isPending } = useSession();
+  const isAuthenticated = !!session?.user && !isPending;
+  const hasPerformedInitialSync = useRef(false);
+
+  // Perform initial sync when user logs in
+  useEffect(() => {
+    if (isAuthenticated && !hasPerformedInitialSync.current) {
+      hasPerformedInitialSync.current = true;
+      syncAll().then((result) => {
+        setAllJourneys(result.journeys);
+        if (result.success) {
+          console.log(
+            `[Sync] Initial sync complete: ${result.journeys.length} journeys synced`
+          );
+        } else {
+          console.error("[Sync] Initial sync failed:", result.errors);
+        }
+      });
+    }
+
+    // Reset flag when user logs out
+    if (!isAuthenticated) {
+      hasPerformedInitialSync.current = false;
+    }
+  }, [isAuthenticated]);
 
   return (
     <>
