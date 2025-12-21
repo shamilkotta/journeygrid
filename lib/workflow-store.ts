@@ -1,15 +1,15 @@
 import type { Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { atom } from "jotai";
+import { atomFamily } from "jotai-family";
 import {
-  LocalJourney,
   createLocalJourney,
   deleteLocalJourney,
   getLocalJourney,
+  type LocalJourney,
   updateLocalJourney,
 } from "./local-db";
 import { debouncedSync, deleteJourney } from "./sync-service";
-import { atomFamily } from "jotai-family";
 
 export type JourneyNodeType = "milestone" | "goal" | "task" | "add";
 

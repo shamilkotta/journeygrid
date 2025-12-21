@@ -1,9 +1,9 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import type { JourneyData } from "@/lib/api-client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeys } from "@/lib/db/schema";
-import { JourneyData } from "@/lib/api-client";
 import { generateId } from "@/lib/utils/id";
 
 type SyncJourney = {

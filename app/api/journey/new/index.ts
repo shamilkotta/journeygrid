@@ -1,12 +1,12 @@
 "use server";
 
+import { nanoid } from "nanoid";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { nanoid } from "nanoid";
-import { generateId } from "@/lib/utils/id";
 import { journeys } from "@/lib/db/schema";
-import { redirect } from "next/navigation";
+import { generateId } from "@/lib/utils/id";
 
 function createDefaultMilestoneNode() {
   return {

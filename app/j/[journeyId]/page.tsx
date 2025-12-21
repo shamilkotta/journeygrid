@@ -1,9 +1,9 @@
 import { and, eq, or } from "drizzle-orm";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeys } from "@/lib/db/schema";
 import JourneyEditor from "./_components/JourneyEditor";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 
 type JourneyPageProps = {
   params: Promise<{ journeyId: string }>;
@@ -39,7 +39,7 @@ const JourneyPage = async ({ params }: JourneyPageProps) => {
     };
   }
 
-  return <JourneyEditor journeyId={journeyId} journey={journey} />;
+  return <JourneyEditor journey={journey} journeyId={journeyId} />;
 };
 
 export default JourneyPage;

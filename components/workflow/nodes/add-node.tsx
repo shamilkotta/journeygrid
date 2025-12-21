@@ -2,10 +2,10 @@
 
 import type { NodeProps } from "@xyflow/react";
 import { SquareDashedMousePointer } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useTransition } from "react";
-import { Spinner } from "@/components/ui/spinner";
 import { newJourney } from "@/app/api/journey/new";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type AddNodeData = {
   onClick?: () => void;
@@ -28,9 +28,9 @@ export function AddNode({ data }: NodeProps & { data?: AddNodeData }) {
       </div>
       <Button
         className="gap-2 shadow-lg"
+        disabled={pending}
         onClick={handleClick}
         size="default"
-        disabled={pending}
       >
         {pending ? (
           <Spinner className="size-4" />

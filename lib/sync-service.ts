@@ -5,16 +5,16 @@
  * Uses server-priority merge strategy with debounced syncing.
  */
 
-import { journeyApi, JourneyData, type SavedJourney } from "./api-client";
+import { type JourneyData, journeyApi } from "./api-client";
 import {
   bulkUpsertFromServer,
   deleteJourneysNotInList,
+  getAllLocalJourneys,
   getDirtyJourneys,
   getLocalJourney,
   getUnsyncedJourneys,
   type LocalJourney,
   markJourneySynced,
-  getAllLocalJourneys,
 } from "./local-db";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
@@ -29,7 +29,7 @@ export type SyncResult = {
 let syncDebounceTimer: NodeJS.Timeout | null = null;
 const SYNC_DEBOUNCE_MS = 5000; // 5 seconds
 let idleTimeout: NodeJS.Timeout | null = null;
-const IDLE_TIMEOUT_MS = 60000; // 1 minute
+const IDLE_TIMEOUT_MS = 60_000; // 1 minute
 
 // Track current sync status
 let currentSyncStatus: SyncStatus = "idle";

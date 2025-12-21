@@ -26,7 +26,7 @@ export default async function NewJourneyPage() {
   });
 
   if (!session?.user) {
-    redirect(`/`);
+    redirect("/");
   }
   const journeyId = generateId();
   const node = createDefaultMilestoneNode();

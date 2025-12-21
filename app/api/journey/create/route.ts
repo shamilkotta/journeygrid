@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     // Generate "Untitled N" name if the provided name is "Untitled Journey"
-    let journeyName = body.name;
+    const journeyName = body.name;
     // if (body.name === "Untitled Journey" || body.name === "Untitled Workflow") {
     //   const userJourneys = await db.query.journeys.findMany({
     //     where: eq(journeys.userId, session.user.id),
