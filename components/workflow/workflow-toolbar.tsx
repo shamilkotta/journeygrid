@@ -369,6 +369,9 @@ function useJourneyState() {
 
 // Hook for journey actions
 function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
+  const { data: session, isPending } = useSession();
+  const isAuthenticated = !!session?.user && !isPending;
+  const hasPerformedInitialSync = useRef(false);
   const {
     currentJourneyId,
     nodes,
@@ -382,6 +385,7 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
     setShowMakePublicDialog,
     updateCurrentJourney,
     deleteJourney,
+    setAllWorkflows,
     router,
   } = state;
 
@@ -481,6 +485,28 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
       setIsDuplicating(false);
     }
   };
+
+  // Perform initial sync when user logs in
+  useEffect(() => {
+    if (isAuthenticated && !hasPerformedInitialSync.current) {
+      hasPerformedInitialSync.current = true;
+      syncAll().then((result) => {
+        setAllWorkflows(result.journeys);
+        if (result.success) {
+          console.log(
+            `[Sync] Initial sync complete: ${result.journeys.length} journeys synced`
+          );
+        } else {
+          console.error("[Sync] Initial sync failed:", result.errors);
+        }
+      });
+    }
+
+    // Reset flag when user logs out
+    if (!isAuthenticated) {
+      hasPerformedInitialSync.current = false;
+    }
+  }, [isAuthenticated]);
 
   return {
     handleSave,
@@ -1175,32 +1201,6 @@ function WorkflowDialogsComponent({
 export const WorkflowToolbar = ({ workflowId }: WorkflowToolbarProps) => {
   const state = useJourneyState();
   const actions = useJourneyActions(state);
-  const setAllJourneys = useSetAtom(allJourneysAtom);
-  const { data: session, isPending } = useSession();
-  const isAuthenticated = !!session?.user && !isPending;
-  const hasPerformedInitialSync = useRef(false);
-
-  // Perform initial sync when user logs in
-  useEffect(() => {
-    if (isAuthenticated && !hasPerformedInitialSync.current) {
-      hasPerformedInitialSync.current = true;
-      syncAll().then((result) => {
-        setAllJourneys(result.journeys);
-        if (result.success) {
-          console.log(
-            `[Sync] Initial sync complete: ${result.journeys.length} journeys synced`
-          );
-        } else {
-          console.error("[Sync] Initial sync failed:", result.errors);
-        }
-      });
-    }
-
-    // Reset flag when user logs out
-    if (!isAuthenticated) {
-      hasPerformedInitialSync.current = false;
-    }
-  }, [isAuthenticated]);
 
   return (
     <>
