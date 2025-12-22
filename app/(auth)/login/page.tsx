@@ -88,13 +88,17 @@ const LoginPage = () => {
 
   const enabledProviders = getEnabledAuthProviders();
   const callbackURL = searchParams.get("callbackUrl") || "/";
+  const isAnonymous =
+    !session?.user ||
+    session.user.name === "Anonymous" ||
+    session.user.email?.startsWith("temp-");
 
   // Redirect if already logged in
   useEffect(() => {
-    if (session && !isPending) {
+    if (session && !isPending && !isAnonymous) {
       router.push(callbackURL);
     }
-  }, [session, isPending, router, callbackURL]);
+  }, [session, isPending, router, callbackURL, isAnonymous]);
 
   // Show verified message if coming from email verification
   useEffect(() => {

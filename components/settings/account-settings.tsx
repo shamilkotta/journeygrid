@@ -35,9 +35,11 @@ export function AccountSettings({
             Email
           </Label>
           <Input
+            disabled
             id="accountEmail"
             onChange={(e) => onEmailChange(e.target.value)}
             placeholder="your.email@example.com"
+            readOnly
             type="email"
             value={accountEmail}
           />

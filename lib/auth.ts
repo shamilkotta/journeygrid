@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { anonymous, genericOAuth } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
+import { anonymous } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { Resend } from "resend";
 import { db } from "./db";
@@ -11,7 +12,6 @@ import {
   users,
   verifications,
 } from "./db/schema";
-import { nextCookies } from "better-auth/next-js";
 
 // Construct schema object for drizzle adapter
 const schema = {
@@ -129,6 +129,12 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  user: {
+    changeEmail: {
+      enabled: false,
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: !!resend,
