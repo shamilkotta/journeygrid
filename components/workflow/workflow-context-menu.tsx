@@ -4,6 +4,7 @@ import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Link2Off, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -15,7 +16,6 @@ import {
   propertiesPanelActiveTabAtom,
   selectedNodeAtom,
 } from "@/lib/workflow-store";
-import { usePathname } from "next/navigation";
 
 export type ContextMenuType = "node" | "edge" | "pane" | null;
 
@@ -125,12 +125,12 @@ export function WorkflowContextMenu({
   // Check if the node is a milestone (can't be deleted)
   const isMilestoneNode = Boolean(
     menuState.nodeId &&
-    nodes.find((n) => n.id === menuState.nodeId)?.data.type === "milestone"
+      nodes.find((n) => n.id === menuState.nodeId)?.data.type === "milestone"
   );
 
   const isAddNode = Boolean(
     menuState.nodeId &&
-    nodes.find((n) => n.id === menuState.nodeId)?.type === "add"
+      nodes.find((n) => n.id === menuState.nodeId)?.type === "add"
   );
 
   const getNodeLabel = () => {

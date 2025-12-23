@@ -21,9 +21,11 @@ import {
   Undo2,
 } from "lucide-react";
 import { nanoid } from "nanoid";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { newJourney } from "@/app/api/journey/new";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,20 +57,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSync } from "@/hooks/use-sync";
+import { api } from "@/lib/api-client";
 import { useSession } from "@/lib/auth-client";
 import {
   duplicateLocalJourney,
   getAllLocalJourneys,
   updateLocalJourney,
 } from "@/lib/local-db";
+import { syncAll } from "@/lib/sync-service";
 import {
   addNodeAtom,
   allJourneysAtom,
   canRedoAtom,
   canUndoAtom,
   clearJourneyAtom,
+  currentJourneyAtom,
   currentJourneyIdAtom,
   deleteEdgeAtom,
+  deleteJourneyAtom,
   deleteNodeAtom,
   edgesAtom,
   hasUnsavedChangesAtom,
@@ -86,20 +92,14 @@ import {
   showClearDialogAtom,
   showDeleteDialogAtom,
   undoAtom,
-  updateNodeDataAtom,
-  currentJourneyAtom,
   updateCurrentJourneyAtom,
-  deleteJourneyAtom,
+  updateNodeDataAtom,
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
 import { Logo } from "../logo";
+import { Spinner } from "../ui/spinner";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
-import Link from "next/link";
-import { Spinner } from "../ui/spinner";
-import { newJourney } from "@/app/api/journey/new";
-import { api } from "@/lib/api-client";
-import { syncAll } from "@/lib/sync-service";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
