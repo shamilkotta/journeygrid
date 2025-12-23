@@ -292,6 +292,7 @@ export async function syncAll(): Promise<SyncResult> {
         visibility: r.visibility,
         updatedAt: r.updatedAt,
         createdAt: r.createdAt,
+        userId: r.userId,
       }))
     );
 

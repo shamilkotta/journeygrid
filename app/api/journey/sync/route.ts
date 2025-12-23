@@ -15,6 +15,7 @@ type SyncJourney = {
   visibility?: "private" | "public";
   createdAt?: string;
   updatedAt?: string;
+  userId?: string;
 };
 
 type SyncRequest = {
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
                 )
               );
           }
-        } else {
+        } else if (journey.userId == session.user.id) {
           // Create new journey
           await db.insert(journeys).values({
             id: generateId(),

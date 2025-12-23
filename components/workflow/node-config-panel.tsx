@@ -405,6 +405,7 @@ export const PanelInner = () => {
               <Label className="ml-1">Status</Label>
               <div className="flex gap-2">
                 <Button
+                  disabled={isGenerating || !isOwner}
                   onClick={() => handleUpdateStatus("not-started")}
                   size="sm"
                   variant={
@@ -416,6 +417,7 @@ export const PanelInner = () => {
                   Not Started
                 </Button>
                 <Button
+                  disabled={isGenerating || !isOwner}
                   onClick={() => handleUpdateStatus("in-progress")}
                   size="sm"
                   variant={
@@ -427,6 +429,7 @@ export const PanelInner = () => {
                   In Progress
                 </Button>
                 <Button
+                  disabled={isGenerating || !isOwner}
                   onClick={() => handleUpdateStatus("completed")}
                   size="sm"
                   variant={
