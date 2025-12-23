@@ -7,7 +7,7 @@ import { journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
 
 // Node type for type-safe node manipulation
-type JourneyNodeLike = {
+export type JourneyNodeLike = {
   id: string;
   data?: {
     status?: string;
@@ -17,7 +17,7 @@ type JourneyNodeLike = {
 };
 
 // Helper to reset node statuses when duplicating
-function resetNodeStatuses(nodes: JourneyNodeLike[]): JourneyNodeLike[] {
+export function resetNodeStatuses(nodes: JourneyNodeLike[]): JourneyNodeLike[] {
   return nodes.map((node) => {
     const newNode: JourneyNodeLike = { ...node, id: nanoid() };
     if (newNode.data) {
@@ -31,7 +31,7 @@ function resetNodeStatuses(nodes: JourneyNodeLike[]): JourneyNodeLike[] {
 }
 
 // Edge type for type-safe edge manipulation
-type JourneyEdgeLike = {
+export type JourneyEdgeLike = {
   id: string;
   source: string;
   target: string;
@@ -39,7 +39,7 @@ type JourneyEdgeLike = {
 };
 
 // Helper to update edge references to new node IDs
-function updateEdgeReferences(
+export function updateEdgeReferences(
   edges: JourneyEdgeLike[],
   oldNodes: JourneyNodeLike[],
   newNodes: JourneyNodeLike[]
@@ -97,23 +97,8 @@ export async function POST(
       newNodes
     );
 
-    // Count user's journeys to generate unique name
-    const userJourneys = await db.query.journeys.findMany({
-      where: eq(journeys.userId, session.user.id),
-    });
-
     // Generate a unique name
     const baseName = `${sourceJourney.name} (Copy)`;
-    let journeyName = baseName;
-    const existingNames = new Set(userJourneys.map((r) => r.name));
-
-    if (existingNames.has(journeyName)) {
-      let counter = 2;
-      while (existingNames.has(`${baseName} ${counter}`)) {
-        counter += 1;
-      }
-      journeyName = `${baseName} ${counter}`;
-    }
 
     // Create the duplicated journey
     const newJourneyId = generateId();
@@ -121,7 +106,7 @@ export async function POST(
       .insert(journeys)
       .values({
         id: newJourneyId,
-        name: journeyName,
+        name: baseName,
         description: sourceJourney.description,
         nodes: newNodes,
         edges: newEdges,

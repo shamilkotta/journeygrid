@@ -100,6 +100,7 @@ import { Logo } from "../logo";
 import { Spinner } from "../ui/spinner";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
+import { duplicateJourney } from "@/app/api/journey/[journeyId]/duplicate";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -299,7 +300,7 @@ function useJourneyState() {
   const deleteJourney = useSetAtom(deleteJourneyAtom);
 
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isDuplicating, startDuplication] = useTransition();
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showMakePublicDialog, setShowMakePublicDialog] = useState(false);
   const [allJourneys, setAllJourneys] = useAtom(allJourneysAtom);
@@ -349,7 +350,7 @@ function useJourneyState() {
     isDownloading,
     setIsDownloading,
     isDuplicating,
-    setIsDuplicating,
+    startDuplication,
     showExportDialog,
     setShowExportDialog,
     showMakePublicDialog,
@@ -381,7 +382,7 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
     setShowClearDialog,
     clearWorkflow,
     setShowDeleteDialog,
-    setIsDuplicating,
+    startDuplication,
     setShowMakePublicDialog,
     updateCurrentJourney,
     deleteJourney,
@@ -468,22 +469,9 @@ function useJourneyActions(state: ReturnType<typeof useJourneyState>) {
       return;
     }
 
-    setIsDuplicating(true);
-    try {
-      // Duplicate in local IndexedDB (no auth required)
-      const newJourney = await duplicateLocalJourney(currentJourneyId);
-      if (newJourney) {
-        toast.success("Journey duplicated successfully");
-        router.push(`/j/${newJourney.id}`);
-      } else {
-        toast.error("Failed to duplicate journey");
-      }
-    } catch (error) {
-      console.error("Failed to duplicate journey:", error);
-      toast.error("Failed to duplicate journey. Please try again.");
-    } finally {
-      setIsDuplicating(false);
-    }
+    startDuplication(() => {
+      duplicateJourney(currentJourneyId);
+    });
   };
 
   // Perform initial sync when user logs in
