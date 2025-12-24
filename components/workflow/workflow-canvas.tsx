@@ -393,8 +393,8 @@ export function WorkflowCanvas() {
       });
 
       // Center the node vertically at the cursor position
-      // Node height is 192px (h-48 in Tailwind)
-      const nodeHeight = 192;
+      // Node height is 80px (h-20 in Tailwind)
+      const nodeHeight = 80;
       position.y -= nodeHeight / 2;
 
       const newNode: JourneyNode = {

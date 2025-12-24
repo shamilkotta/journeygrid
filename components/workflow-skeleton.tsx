@@ -29,12 +29,12 @@ export function WorkflowSkeleton({
     <div>
       <div className="relative flex items-center gap-3">
         <div
-          className={`relative rounded-lg border ${getAccentColor()} animate-pulse bg-white/50 dark:bg-zinc-900/50 px-4 py-3 pr-16 delay-150`}
+          className={`relative rounded-lg border ${getAccentColor()} animate-pulse bg-white/50 px-4 py-3 pr-16 delay-150 dark:bg-zinc-900/50`}
         >
           <div className="absolute -top-2 -left-2">
             <div className={`h-6 w-6 rounded-md border ${getIconColor()}`} />
           </div>
-          <div className="absolute top-1/2 left-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+          <div className="absolute top-1/2 left-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
           <div className="flex items-center gap-2">
             <div className={`h-10 w-10 rounded-lg ${getIconColor()}`} />
             <div className="space-y-2">
@@ -42,7 +42,7 @@ export function WorkflowSkeleton({
               <div className="h-2 w-12 rounded bg-zinc-500 dark:bg-zinc-800" />
             </div>
           </div>
-          <div className="absolute top-1/2 right-0 h-2 w-2 translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+          <div className="absolute top-1/2 right-0 h-2 w-2 translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
         </div>
         <div className="h-px w-12 border-zinc-700 border-t border-dashed" />
       </div>
@@ -51,9 +51,9 @@ export function WorkflowSkeleton({
       <div className="relative mt-4 flex items-center gap-3">
         <div className="h-px w-16 border-zinc-700 border-t border-dashed" />
         <div
-          className={`relative rounded-lg border ${getAccentColor()} animate-pulse bg-white/50 dark:bg-zinc-900/50 px-4 py-3 pr-16 delay-150`}
+          className={`relative rounded-lg border ${getAccentColor()} animate-pulse bg-white/50 px-4 py-3 pr-16 delay-150 dark:bg-zinc-900/50`}
         >
-          <div className="absolute top-1/2 left-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+          <div className="absolute top-1/2 left-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
           <div className="flex items-center gap-2">
             <div className={`h-10 w-10 rounded-lg ${getIconColor()}`} />
             <div className="space-y-2">
@@ -61,17 +61,17 @@ export function WorkflowSkeleton({
               <div className="h-2 w-12 rounded bg-zinc-500 dark:bg-zinc-800" />
             </div>
           </div>
-          <div className="absolute top-1/2 right-0 h-2 w-2 translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+          <div className="absolute top-1/2 right-0 h-2 w-2 translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
         </div>
         {/* Connecting line - middle */}
         <div className="h-px w-12 border-zinc-700 border-t border-dashed" />
         <div
-          className={`relative rounded-lg border ${getAccentColor()} animate-pulse bg-white/50 dark:bg-zinc-900/50 px-4 py-3 pr-16 delay-150`}
+          className={`relative rounded-lg border ${getAccentColor()} animate-pulse bg-white/50 px-4 py-3 pr-16 delay-150 dark:bg-zinc-900/50`}
         >
           <div className="absolute -top-2 -left-2">
             <div className={`h-6 w-6 rounded-md border ${getIconColor()}`} />
           </div>
-          <div className="absolute top-1/2 left-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+          <div className="absolute top-1/2 left-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-500 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
           <div className="flex items-center gap-2">
             <div className={`h-10 w-10 rounded-lg ${getIconColor()}`} />
             <div className="space-y-2">

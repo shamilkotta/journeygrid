@@ -16,7 +16,7 @@ import { Spinner } from "./ui/spinner";
 
 export function LoadingFallback() {
   return (
-    <div className="fixed top-0 left-0 right-0 bottom-0 w-dvw h-dvh inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+    <div className="fixed inset-0 top-0 right-0 bottom-0 left-0 z-50 flex h-dvh w-dvw items-center justify-center bg-black/30 p-4">
       <div className="fade-in-0 zoom-in-95 w-full max-w-3xl animate-in duration-300">
         {/* Terminal Window */}
         <div className="rounded-xl border border-border bg-card shadow-2xl">
@@ -85,7 +85,7 @@ export const ErrorFallback = ({
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 bottom-0 w-dvw h-dvh inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+    <div className="fixed inset-0 top-0 right-0 bottom-0 left-0 z-50 flex h-dvh w-dvw items-center justify-center bg-black/30 p-4">
       <div className="fade-in-0 zoom-in-95 w-full max-w-3xl animate-in duration-300">
         {/* Terminal Window */}
         <div className="rounded-xl border border-destructive/50 bg-card shadow-2xl">
@@ -163,7 +163,7 @@ export const NotFoundFallback = () => {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 bottom-0 w-dvw h-dvh inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+    <div className="fixed inset-0 top-0 right-0 bottom-0 left-0 z-50 flex h-dvh w-dvw items-center justify-center bg-black/30 p-4">
       <div className="fade-in-0 zoom-in-95 w-full max-w-3xl animate-in duration-300">
         {/* Terminal Window */}
         <div className="rounded-xl border border-border bg-card shadow-2xl">

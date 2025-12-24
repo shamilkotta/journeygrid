@@ -1,15 +1,15 @@
 "use server";
 
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import {
-  JourneyEdgeLike,
-  JourneyNodeLike,
+  type JourneyEdgeLike,
+  type JourneyNodeLike,
   resetNodeStatuses,
   updateEdgeReferences,
 } from "./route";

@@ -253,6 +253,14 @@ export const onNodesChangeAtom = atom(
     if (hadPositionChanges) {
       set(autosaveAtom); // Debounced save
     }
+
+    // Check if there were dimensions changes (resize) to trigger save
+    const hadDimensionChanges = filteredChanges.some(
+      (change) => change.type === "dimensions"
+    );
+    if (hadDimensionChanges) {
+      set(autosaveAtom);
+    }
   }
 );
 
@@ -342,6 +350,23 @@ export const updateNodeDataAtom = atom(
     set(hasUnsavedChangesAtom, true);
     // Trigger debounced autosave (for typing)
     set(autosaveAtom);
+  }
+);
+
+export const resizeNodeAtom = atom(
+  null,
+  (get, set, { id, style }: { id: string; style: React.CSSProperties }) => {
+    const currentNodes = get(nodesAtom);
+    const newNodes = currentNodes.map((node) => {
+      if (node.id === id) {
+        return { ...node, style: { ...node.style, ...style } };
+      }
+      return node;
+    });
+
+    set(nodesAtom, newNodes);
+    set(hasUnsavedChangesAtom, true);
+    set(autosaveAtom); // Debounced save is fine for resizing
   }
 );
 

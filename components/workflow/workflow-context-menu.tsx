@@ -61,7 +61,7 @@ export function WorkflowContextMenu({
 
   const handleAddStep = useCallback(() => {
     if (menuState?.flowPosition) {
-      const nodeHeight = 192;
+      const nodeHeight = 80;
       const newNode: JourneyNode = {
         id: nanoid(),
         type: "goal",

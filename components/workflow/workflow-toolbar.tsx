@@ -25,6 +25,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { duplicateJourney } from "@/app/api/journey/[journeyId]/duplicate";
 import { newJourney } from "@/app/api/journey/new";
 import {
   AlertDialog,
@@ -59,11 +60,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSync } from "@/hooks/use-sync";
 import { api } from "@/lib/api-client";
 import { useSession } from "@/lib/auth-client";
-import {
-  duplicateLocalJourney,
-  getAllLocalJourneys,
-  updateLocalJourney,
-} from "@/lib/local-db";
+import { getAllLocalJourneys, updateLocalJourney } from "@/lib/local-db";
 import { syncAll } from "@/lib/sync-service";
 import {
   addNodeAtom,
@@ -100,7 +97,6 @@ import { Logo } from "../logo";
 import { Spinner } from "../ui/spinner";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
-import { duplicateJourney } from "@/app/api/journey/[journeyId]/duplicate";
 
 type WorkflowToolbarProps = {
   workflowId?: string;
@@ -564,9 +560,9 @@ function ToolbarActions({
     const position = screenToFlowPosition({ x: centerX, y: centerY });
 
     // Adjust for node dimensions to center it properly
-    // Journey node is 128px wide and 128px tall (w-32 h-32 in Tailwind)
-    const nodeWidth = 128;
-    const nodeHeight = 128;
+    // Journey node is 200px wide and 80px tall (w-[200px] h-20 in Tailwind)
+    const nodeWidth = 200;
+    const nodeHeight = 80;
     position.x -= nodeWidth / 2;
     position.y -= nodeHeight / 2;
 
