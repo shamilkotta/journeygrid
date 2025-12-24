@@ -58,10 +58,9 @@ export const GoalTaskNode = memo(
               position="top"
               style={{
                 ...controlStyle,
-                top: -10,
-                left: 0,
+                top: 2.5,
                 width: "100%",
-                height: 20,
+                height: 10,
                 cursor: "ns-resize",
                 zIndex: 50,
               }}
@@ -73,10 +72,9 @@ export const GoalTaskNode = memo(
               position="right"
               style={{
                 ...controlStyle,
-                right: -10,
-                top: 0,
+                right: 2.5,
                 height: "100%",
-                width: 20,
+                width: 10,
                 cursor: "ew-resize",
                 zIndex: 50,
               }}
@@ -88,10 +86,9 @@ export const GoalTaskNode = memo(
               position="bottom"
               style={{
                 ...controlStyle,
-                bottom: -10,
-                left: 0,
+                bottom: 2.5,
                 width: "100%",
-                height: 20,
+                height: 10,
                 cursor: "ns-resize",
                 zIndex: 50,
               }}
@@ -103,10 +100,9 @@ export const GoalTaskNode = memo(
               position="left"
               style={{
                 ...controlStyle,
-                left: -10,
-                top: 0,
+                left: 2.5,
                 height: "100%",
-                width: 20,
+                width: 10,
                 cursor: "ew-resize",
                 zIndex: 50,
               }}
