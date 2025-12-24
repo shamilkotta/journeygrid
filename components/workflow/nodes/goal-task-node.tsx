@@ -13,7 +13,7 @@ type GoalTaskNodeProps = NodeProps & {
 };
 
 export const GoalTaskNode = memo(
-  ({ id, data, selected }: GoalTaskNodeProps) => {
+  ({ id, data, selected, height }: GoalTaskNodeProps) => {
     const resizeNode = useSetAtom(resizeNodeAtom);
 
     if (!data) {
@@ -39,6 +39,11 @@ export const GoalTaskNode = memo(
 
     const minWidth = 200;
     const minHeight = 50;
+
+    // Calculate line count based on height
+    // ~45px reserved for padding (16px), header (20px), gap (6px) + buffer
+    // ~13px per line (10px font size * 1.25 leading)
+    const lineCount = height ? Math.max(1, Math.floor((height - 45) / 13)) : 2;
 
     // Common style for resize controls to ensure large hit area and correct positioning
     const controlStyle = {
@@ -134,7 +139,15 @@ export const GoalTaskNode = memo(
 
           {/* Bottom Row: Description */}
           {displayDescription && (
-            <div className="line-clamp-2 w-full text-left text-[10px] text-muted-foreground leading-tight">
+            <div
+              className="w-full text-left text-[10px] text-muted-foreground leading-tight"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: lineCount,
+                overflow: "hidden",
+              }}
+            >
               {displayDescription}
             </div>
           )}

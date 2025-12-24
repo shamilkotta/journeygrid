@@ -13,7 +13,7 @@ type MilestoneNodeProps = NodeProps & {
 };
 
 export const MilestoneNode = memo(
-  ({ id, data, selected }: MilestoneNodeProps) => {
+  ({ id, data, selected, height }: MilestoneNodeProps) => {
     const resizeNode = useSetAtom(resizeNodeAtom);
 
     if (!data) {
@@ -36,6 +36,11 @@ export const MilestoneNode = memo(
     const minWidth = 200;
     const minHeight = 50;
 
+    // Calculate line count based on height
+    // ~45px reserved for padding (16px), header (20px), gap (6px) + buffer
+    // ~13px per line (10px font size * 1.25 leading)
+    const lineCount = height ? Math.max(1, Math.floor((height - 45) / 13)) : 2;
+
     // Common style for resize controls to ensure large hit area and correct positioning
     const controlStyle = {
       position: "absolute" as const,
@@ -54,10 +59,9 @@ export const MilestoneNode = memo(
               position="top"
               style={{
                 ...controlStyle,
-                top: -10,
-                left: 0,
+                top: 2.5,
                 width: "100%",
-                height: 20,
+                height: 10,
                 cursor: "ns-resize",
                 zIndex: 50,
               }}
@@ -69,10 +73,9 @@ export const MilestoneNode = memo(
               position="right"
               style={{
                 ...controlStyle,
-                right: -10,
-                top: 0,
+                right: 2.5,
                 height: "100%",
-                width: 20,
+                width: 10,
                 cursor: "ew-resize",
                 zIndex: 50,
               }}
@@ -84,10 +87,9 @@ export const MilestoneNode = memo(
               position="bottom"
               style={{
                 ...controlStyle,
-                bottom: -10,
-                left: 0,
+                bottom: 2.5,
                 width: "100%",
-                height: 20,
+                height: 10,
                 cursor: "ns-resize",
                 zIndex: 50,
               }}
@@ -99,10 +101,9 @@ export const MilestoneNode = memo(
               position="left"
               style={{
                 ...controlStyle,
-                left: -10,
-                top: 0,
+                left: 2.5,
                 height: "100%",
-                width: 20,
+                width: 10,
                 cursor: "ew-resize",
                 zIndex: 50,
               }}
@@ -126,7 +127,15 @@ export const MilestoneNode = memo(
 
           {/* Bottom Row: Description */}
           {displayDescription && (
-            <div className="line-clamp-2 w-full text-left text-[10px] text-muted-foreground leading-tight">
+            <div
+              className="w-full text-left text-[10px] text-muted-foreground leading-tight"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: lineCount,
+                overflow: "hidden",
+              }}
+            >
               {displayDescription}
             </div>
           )}
