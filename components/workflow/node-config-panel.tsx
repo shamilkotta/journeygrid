@@ -13,8 +13,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NotionDescriptionEditor } from "@/components/ui/notion-description-editor";
+import { NotionTitleEditor } from "@/components/ui/notion-title-editor";
+import { defaultNodeIcons } from "@/lib/utils/icon-mapper";
 import {
   allJourneysAtom,
   currentJourneyAtom,
@@ -173,6 +177,12 @@ export const PanelInner = () => {
   const handleUpdateDescription = (description: string) => {
     if (selectedNode) {
       updateNodeData({ id: selectedNode.id, data: { description } });
+    }
+  };
+
+  const handleUpdateIcon = (icon: string) => {
+    if (selectedNode) {
+      updateNodeData({ id: selectedNode.id, data: { icon } });
     }
   };
 
@@ -375,35 +385,48 @@ export const PanelInner = () => {
           className="flex flex-col overflow-hidden"
           value="properties"
         >
-          <div className="flex-1 space-y-4 overflow-y-auto p-4">
-            <div className="space-y-2">
-              <Label className="ml-1" htmlFor="label">
-                Label
-              </Label>
-              <Input
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Notion-style header with icon and title */}
+            <div className="mb-6">
+              <IconPicker
                 disabled={isGenerating || !isOwner}
-                id="label"
-                onChange={(e) => handleUpdateLabel(e.target.value)}
+                onChange={handleUpdateIcon}
+                value={
+                  selectedNode.data.icon ||
+                  defaultNodeIcons[selectedNode.data.type]
+                }
+              />
+              <NotionTitleEditor
+                className="mt-2"
+                disabled={isGenerating || !isOwner}
+                onChange={handleUpdateLabel}
+                placeholder={
+                  selectedNode.data.type === "goal"
+                    ? "Goal"
+                    : selectedNode.data.type === "milestone"
+                      ? "Milestone"
+                      : "Task"
+                }
                 value={selectedNode.data.label}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="ml-1" htmlFor="description">
-                Description
-              </Label>
-              <Input
+            {/* Description block */}
+            <div className="mb-6">
+              <NotionDescriptionEditor
                 disabled={isGenerating || !isOwner}
-                id="description"
-                onChange={(e) => handleUpdateDescription(e.target.value)}
-                placeholder="Optional description"
+                onChange={handleUpdateDescription}
+                placeholder="Add a description..."
                 value={selectedNode.data.description || ""}
               />
             </div>
 
+            {/* Status section */}
             <div className="space-y-2">
-              <Label className="ml-1">Status</Label>
-              <div className="flex gap-2">
+              <Label className="ml-1 text-muted-foreground text-xs uppercase tracking-wide">
+                Status
+              </Label>
+              <div className="flex flex-wrap gap-2">
                 <Button
                   disabled={isGenerating || !isOwner}
                   onClick={() => handleUpdateStatus("not-started")}
@@ -444,7 +467,7 @@ export const PanelInner = () => {
             </div>
 
             {!isOwner && (
-              <div className="rounded-lg border border-muted bg-muted/30 p-3">
+              <div className="mt-6 rounded-lg border border-muted bg-muted/30 p-3">
                 <p className="text-muted-foreground text-sm">
                   You are viewing a public journey. Duplicate it to make
                   changes.

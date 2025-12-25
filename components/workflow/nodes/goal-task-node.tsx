@@ -2,10 +2,12 @@
 
 import { type NodeProps, NodeResizeControl } from "@xyflow/react";
 import { useSetAtom } from "jotai";
-import { CheckCircle2, Target } from "lucide-react";
 import { memo } from "react";
 import { Node, NodeTitle } from "@/components/ai-elements/node";
+import { extractDescriptionText } from "@/components/ui/notion-description-editor";
+import { extractTextFromHtml } from "@/components/ui/notion-title-editor";
 import { cn } from "@/lib/utils";
+import { getNodeIcon } from "@/lib/utils/icon-mapper";
 import { type JourneyNodeData, resizeNodeAtom } from "@/lib/workflow-store";
 
 type GoalTaskNodeProps = NodeProps & {
@@ -20,12 +22,14 @@ export const GoalTaskNode = memo(
       return null;
     }
 
-    const displayTitle = data.label || (data.type === "goal" ? "Goal" : "Task");
-    const displayDescription = data.description || "";
+    // Extract plain text from HTML content for display
+    const rawTitle = extractTextFromHtml(data.label);
+    const displayTitle = rawTitle || (data.type === "goal" ? "Goal" : "Task");
+    const displayDescription = extractDescriptionText(data.description);
     const status = data.status || "not-started";
 
-    // Select icon based on node type
-    const NodeIcon = data.type === "goal" ? Target : CheckCircle2;
+    // Get icon based on stored icon key or default for node type
+    const NodeIcon = getNodeIcon(data.icon, data.type);
 
     const handleResizeEnd = (
       _: unknown,

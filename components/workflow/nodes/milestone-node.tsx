@@ -2,10 +2,12 @@
 
 import { type NodeProps, NodeResizeControl } from "@xyflow/react";
 import { useSetAtom } from "jotai";
-import { Flag } from "lucide-react";
 import { memo } from "react";
 import { Node, NodeTitle } from "@/components/ai-elements/node";
+import { extractDescriptionText } from "@/components/ui/notion-description-editor";
+import { extractTextFromHtml } from "@/components/ui/notion-title-editor";
 import { cn } from "@/lib/utils";
+import { getNodeIcon } from "@/lib/utils/icon-mapper";
 import { type JourneyNodeData, resizeNodeAtom } from "@/lib/workflow-store";
 
 type MilestoneNodeProps = NodeProps & {
@@ -20,8 +22,13 @@ export const MilestoneNode = memo(
       return null;
     }
 
-    const displayTitle = data.label || "Milestone";
-    const displayDescription = data.description || "Milestone";
+    // Extract plain text from HTML content for display
+    const rawTitle = extractTextFromHtml(data.label);
+    const displayTitle = rawTitle || "Milestone";
+    const displayDescription = extractDescriptionText(data.description);
+
+    // Get icon based on stored icon key or default for milestone
+    const NodeIcon = getNodeIcon(data.icon, data.type);
 
     const handleResizeEnd = (
       _: unknown,
@@ -119,7 +126,10 @@ export const MilestoneNode = memo(
         >
           {/* Top Row: Icon and Title */}
           <div className="flex w-full items-center gap-2">
-            <Flag className="size-4 shrink-0 text-blue-500" strokeWidth={1.5} />
+            <NodeIcon
+              className="size-4 shrink-0 text-blue-500"
+              strokeWidth={1.5}
+            />
             <NodeTitle className="line-clamp-1 flex-1 text-left font-medium text-sm leading-none">
               {displayTitle}
             </NodeTitle>

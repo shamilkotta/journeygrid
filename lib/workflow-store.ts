@@ -42,6 +42,7 @@ export type Comment = {
 export type JourneyNodeData = {
   label: string;
   description?: string;
+  icon?: string; // Icon key (e.g., "target", "flag", "check-circle-2")
   type: JourneyNodeType;
   todos?: Todo[];
   resources?: Resource[];
