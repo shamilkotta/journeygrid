@@ -561,8 +561,8 @@ function ToolbarActions({
 
     // Adjust for node dimensions to center it properly
     // Journey node is 280px wide and 80px tall (w-[280px] min-h-[80px] in Tailwind)
-    const nodeWidth = 280;
-    const nodeHeight = 80;
+    const nodeWidth = 230;
+    const nodeHeight = 60;
     position.x -= nodeWidth / 2;
     position.y -= nodeHeight / 2;
 
