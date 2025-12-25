@@ -40,13 +40,13 @@ export const MilestoneNode = memo(
       });
     };
 
-    const minWidth = 200;
-    const minHeight = 50;
+    const minWidth = 280;
+    const minHeight = 80;
 
     // Calculate line count based on height
-    // ~45px reserved for padding (16px), header (20px), gap (6px) + buffer
-    // ~13px per line (10px font size * 1.25 leading)
-    const lineCount = height ? Math.max(1, Math.floor((height - 45) / 13)) : 2;
+    // ~65px reserved for padding (24px), header (30px), gap (8px) + buffer
+    // ~18px per line (14px font size * 1.25 leading)
+    const lineCount = height ? Math.max(1, Math.floor((height - 65) / 18)) : 2;
 
     // Common style for resize controls to ensure large hit area and correct positioning
     const controlStyle = {
@@ -119,18 +119,18 @@ export const MilestoneNode = memo(
         )}
         <Node
           className={cn(
-            "flex size-full min-h-[50px] min-w-[200px] flex-col items-start justify-center gap-1.5 px-3 py-2 shadow-none transition-all duration-150 ease-out",
+            "flex size-full min-h-[80px] min-w-[280px] flex-col items-start justify-center gap-2 px-4 py-3 shadow-none transition-all duration-150 ease-out",
             selected && "border-primary"
           )}
           handles={{ target: false, source: true }}
         >
           {/* Top Row: Icon and Title */}
-          <div className="flex w-full items-center gap-2">
+          <div className="flex w-full items-center gap-2.5">
             <NodeIcon
-              className="size-4 shrink-0 text-blue-500"
+              className="size-5 shrink-0 text-blue-500"
               strokeWidth={1.5}
             />
-            <NodeTitle className="line-clamp-1 flex-1 text-left font-medium text-sm leading-none">
+            <NodeTitle className="line-clamp-1 flex-1 text-left font-medium text-base leading-none">
               {displayTitle}
             </NodeTitle>
           </div>
@@ -138,7 +138,7 @@ export const MilestoneNode = memo(
           {/* Bottom Row: Description */}
           {displayDescription && (
             <div
-              className="w-full text-left text-[10px] text-muted-foreground leading-tight"
+              className="w-full text-left text-muted-foreground text-sm leading-tight"
               style={{
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",

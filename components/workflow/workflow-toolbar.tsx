@@ -560,8 +560,8 @@ function ToolbarActions({
     const position = screenToFlowPosition({ x: centerX, y: centerY });
 
     // Adjust for node dimensions to center it properly
-    // Journey node is 200px wide and 80px tall (w-[200px] h-20 in Tailwind)
-    const nodeWidth = 200;
+    // Journey node is 280px wide and 80px tall (w-[280px] min-h-[80px] in Tailwind)
+    const nodeWidth = 280;
     const nodeHeight = 80;
     position.x -= nodeWidth / 2;
     position.y -= nodeHeight / 2;
