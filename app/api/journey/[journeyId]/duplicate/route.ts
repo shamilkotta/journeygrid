@@ -10,24 +10,17 @@ import { generateId } from "@/lib/utils/id";
 export type JourneyNodeLike = {
   id: string;
   data?: {
-    status?: string;
     [key: string]: unknown;
   };
   [key: string]: unknown;
 };
 
-// Helper to reset node statuses when duplicating
-export function resetNodeStatuses(nodes: JourneyNodeLike[]): JourneyNodeLike[] {
-  return nodes.map((node) => {
-    const newNode: JourneyNodeLike = { ...node, id: nanoid() };
-    if (newNode.data) {
-      const data = { ...newNode.data };
-      // Reset status to not-started
-      data.status = "not-started";
-      newNode.data = data;
-    }
-    return newNode;
-  });
+// Helper to generate new IDs for nodes when duplicating
+export function duplicateNodes(nodes: JourneyNodeLike[]): JourneyNodeLike[] {
+  return nodes.map((node) => ({
+    ...node,
+    id: nanoid(),
+  }));
 }
 
 // Edge type for type-safe edge manipulation
@@ -90,7 +83,7 @@ export async function POST(
 
     // Generate new IDs for nodes
     const oldNodes = sourceJourney.nodes as JourneyNodeLike[];
-    const newNodes = resetNodeStatuses(oldNodes);
+    const newNodes = duplicateNodes(oldNodes);
     const newEdges = updateEdgeReferences(
       sourceJourney.edges as JourneyEdgeLike[],
       oldNodes,

@@ -171,8 +171,7 @@ Node structure:
     "milestoneDate": "2024-01-15",
     "deadline": "2024-01-30",
     "startDate": "2024-01-01",
-    "resources": [{"id": "res-1", "url": "https://...", "title": "Resource"}],
-    "status": "not-started" | "in-progress" | "completed"
+    "resources": [{"id": "res-1", "url": "https://...", "title": "Resource"}]
   }
 }
 
@@ -222,18 +221,18 @@ JOURNEY FLOW:
 Example output (linear learning path journey with 250px horizontal spacing):
 {"op": "setName", "name": "React Learning Path"}
 {"op": "setDescription", "description": "Complete journey for learning React from basics to advanced"}
-{"op": "addNode", "node": {"id": "milestone-1", "type": "milestone", "position": {"x": 100, "y": 200}, "data": {"label": "Getting Started", "description": "Foundation phase", "type": "milestone", "milestoneDate": "2024-01-15", "status": "not-started"}}}
-{"op": "addNode", "node": {"id": "goal-1", "type": "goal", "position": {"x": 350, "y": 200}, "data": {"label": "Learn React Fundamentals", "description": "Understand core concepts", "type": "goal", "todos": [{"id": "todo-1", "text": "Learn JSX syntax", "completed": false}, {"id": "todo-2", "text": "Understand components", "completed": false}], "deadline": "2024-01-30", "status": "not-started"}}}
-{"op": "addNode", "node": {"id": "task-1", "type": "task", "position": {"x": 600, "y": 200}, "data": {"label": "Set up development environment", "description": "Install Node.js and create first React app", "type": "task", "todos": [{"id": "todo-3", "text": "Install Node.js", "completed": false}, {"id": "todo-4", "text": "Create React app with Vite", "completed": false}], "startDate": "2024-01-01", "status": "not-started"}}}
+{"op": "addNode", "node": {"id": "milestone-1", "type": "milestone", "position": {"x": 100, "y": 200}, "data": {"label": "Getting Started", "description": "Foundation phase", "type": "milestone", "milestoneDate": "2024-01-15"}}}
+{"op": "addNode", "node": {"id": "goal-1", "type": "goal", "position": {"x": 350, "y": 200}, "data": {"label": "Learn React Fundamentals", "description": "Understand core concepts", "type": "goal", "todos": [{"id": "todo-1", "text": "Learn JSX syntax", "completed": false}, {"id": "todo-2", "text": "Understand components", "completed": false}], "deadline": "2024-01-30"}}}
+{"op": "addNode", "node": {"id": "task-1", "type": "task", "position": {"x": 600, "y": 200}, "data": {"label": "Set up development environment", "description": "Install Node.js and create first React app", "type": "task", "todos": [{"id": "todo-3", "text": "Install Node.js", "completed": false}, {"id": "todo-4", "text": "Create React app with Vite", "completed": false}], "startDate": "2024-01-01"}}}
 {"op": "addEdge", "edge": {"id": "e1", "source": "milestone-1", "target": "goal-1", "type": "default"}}
 {"op": "addEdge", "edge": {"id": "e2", "source": "goal-1", "target": "task-1", "type": "default"}}
 
 Example output (branching project journey with 250px vertical spacing):
 {"op": "setName", "name": "SaaS Product Launch"}
 {"op": "setDescription", "description": "Journey for launching a new SaaS product"}
-{"op": "addNode", "node": {"id": "milestone-1", "type": "milestone", "position": {"x": 100, "y": 200}, "data": {"label": "Project Kickoff", "type": "milestone", "milestoneDate": "2024-01-01", "status": "not-started"}}}
-{"op": "addNode", "node": {"id": "goal-frontend", "type": "goal", "position": {"x": 350, "y": 75}, "data": {"label": "Build Frontend", "type": "goal", "deadline": "2024-02-15", "status": "not-started"}}}
-{"op": "addNode", "node": {"id": "goal-backend", "type": "goal", "position": {"x": 350, "y": 325}, "data": {"label": "Build Backend API", "type": "goal", "deadline": "2024-02-15", "status": "not-started"}}}
+{"op": "addNode", "node": {"id": "milestone-1", "type": "milestone", "position": {"x": 100, "y": 200}, "data": {"label": "Project Kickoff", "type": "milestone", "milestoneDate": "2024-01-01"}}}
+{"op": "addNode", "node": {"id": "goal-frontend", "type": "goal", "position": {"x": 350, "y": 75}, "data": {"label": "Build Frontend", "type": "goal", "deadline": "2024-02-15"}}}
+{"op": "addNode", "node": {"id": "goal-backend", "type": "goal", "position": {"x": 350, "y": 325}, "data": {"label": "Build Backend API", "type": "goal", "deadline": "2024-02-15"}}}
 {"op": "addEdge", "edge": {"id": "e1", "source": "milestone-1", "target": "goal-frontend", "type": "default"}}
 {"op": "addEdge", "edge": {"id": "e2", "source": "milestone-1", "target": "goal-backend", "type": "default"}}
 

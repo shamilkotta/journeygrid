@@ -8,9 +8,9 @@ import { db } from "@/lib/db";
 import { journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
 import {
+  duplicateNodes,
   type JourneyEdgeLike,
   type JourneyNodeLike,
-  resetNodeStatuses,
   updateEdgeReferences,
 } from "./route";
 
@@ -47,7 +47,7 @@ export const duplicateJourney = async (journeyId: string) => {
 
   // Generate new IDs for nodes
   const oldNodes = sourceJourney.nodes as JourneyNodeLike[];
-  const newNodes = resetNodeStatuses(oldNodes);
+  const newNodes = duplicateNodes(oldNodes);
   const newEdges = updateEdgeReferences(
     sourceJourney.edges as JourneyEdgeLike[],
     oldNodes,

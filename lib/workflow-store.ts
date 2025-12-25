@@ -51,7 +51,6 @@ export type JourneyNodeData = {
   milestoneDate?: string;
   deadline?: string;
   startDate?: string;
-  status?: "not-started" | "in-progress" | "completed";
   onClick?: () => void; // For the "add" node type
 };
 
@@ -607,13 +606,3 @@ export const redoAtom = atom(null, (get, set) => {
 // Can undo/redo atoms
 export const canUndoAtom = atom((get) => get(historyAtom).length > 0);
 export const canRedoAtom = atom((get) => get(futureAtom).length > 0);
-
-// Clear all node statuses
-export const clearNodeStatusesAtom = atom(null, (get, set) => {
-  const currentNodes = get(nodesAtom);
-  const newNodes = currentNodes.map((node) => ({
-    ...node,
-    data: { ...node.data, status: "not-started" as const },
-  }));
-  set(nodesAtom, newNodes);
-});

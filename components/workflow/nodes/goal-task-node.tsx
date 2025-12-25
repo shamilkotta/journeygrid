@@ -26,7 +26,6 @@ export const GoalTaskNode = memo(
     const rawTitle = extractTextFromHtml(data.label);
     const displayTitle = rawTitle || (data.type === "goal" ? "Goal" : "Task");
     const displayDescription = extractDescriptionText(data.description);
-    const status = data.status || "not-started";
 
     // Get icon based on stored icon key or default for node type
     const NodeIcon = getNodeIcon(data.icon, data.type);
@@ -128,12 +127,7 @@ export const GoalTaskNode = memo(
           {/* Top Row: Icon and Title */}
           <div className="flex w-full items-center gap-2">
             <NodeIcon
-              className={cn(
-                "size-4 shrink-0",
-                status === "completed" && "text-green-500",
-                status === "in-progress" && "text-blue-500",
-                status === "not-started" && "text-muted-foreground"
-              )}
+              className="size-4 shrink-0 text-muted-foreground"
               strokeWidth={1.5}
             />
             <NodeTitle className="line-clamp-1 flex-1 text-left font-medium text-sm leading-none">

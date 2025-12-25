@@ -605,7 +605,6 @@ function ToolbarActions({
         label: hasMilestone ? "" : "Start",
         description: "",
         type: nodeType,
-        status: "not-started",
       },
     };
 

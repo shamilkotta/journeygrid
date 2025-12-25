@@ -405,7 +405,6 @@ export function WorkflowCanvas() {
           label: nodeTemplate.label,
           description: nodeTemplate.description,
           type: nodeTemplate.type,
-          status: "not-started",
         },
         selected: true,
       };

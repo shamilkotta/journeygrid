@@ -150,17 +150,6 @@ export const PanelInner = () => {
     }
   };
 
-  const handleUpdateStatus = (
-    status: "not-started" | "in-progress" | "completed"
-  ) => {
-    if (selectedNode) {
-      updateNodeData({
-        id: selectedNode.id,
-        data: { status },
-      });
-    }
-  };
-
   const handleDeleteEdge = () => {
     if (selectedEdgeId) {
       deleteEdge(selectedEdgeId);
@@ -419,51 +408,6 @@ export const PanelInner = () => {
                 placeholder="Add a description..."
                 value={selectedNode.data.description || ""}
               />
-            </div>
-
-            {/* Status section */}
-            <div className="space-y-2">
-              <Label className="ml-1 text-muted-foreground text-xs uppercase tracking-wide">
-                Status
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={isGenerating || !isOwner}
-                  onClick={() => handleUpdateStatus("not-started")}
-                  size="sm"
-                  variant={
-                    selectedNode.data.status === "not-started"
-                      ? "default"
-                      : "outline"
-                  }
-                >
-                  Not Started
-                </Button>
-                <Button
-                  disabled={isGenerating || !isOwner}
-                  onClick={() => handleUpdateStatus("in-progress")}
-                  size="sm"
-                  variant={
-                    selectedNode.data.status === "in-progress"
-                      ? "default"
-                      : "outline"
-                  }
-                >
-                  In Progress
-                </Button>
-                <Button
-                  disabled={isGenerating || !isOwner}
-                  onClick={() => handleUpdateStatus("completed")}
-                  size="sm"
-                  variant={
-                    selectedNode.data.status === "completed"
-                      ? "default"
-                      : "outline"
-                  }
-                >
-                  Completed
-                </Button>
-              </div>
             </div>
 
             {!isOwner && (

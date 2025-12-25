@@ -17,7 +17,6 @@ function createDefaultMilestoneNode() {
       label: "Start",
       description: "",
       type: "milestone" as const,
-      status: "not-started" as const,
     },
   };
 }

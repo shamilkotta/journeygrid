@@ -73,7 +73,6 @@ export function WorkflowContextMenu({
           label: "",
           description: "",
           type: "goal",
-          status: "not-started",
         },
         selected: true,
       };
