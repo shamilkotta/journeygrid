@@ -219,9 +219,6 @@ export const PanelInner = () => {
     return (
       <>
         <div className="flex size-full flex-col">
-          <div className="flex h-14 w-full shrink-0 items-center border-b bg-transparent px-4">
-            <h2 className="font-semibold text-foreground">Properties</h2>
-          </div>
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
             <div className="space-y-2">
               <Label className="ml-1" htmlFor="edge-id">
@@ -287,14 +284,6 @@ export const PanelInner = () => {
           onValueChange={setActiveTab}
           value={activeTab}
         >
-          <TabsList className="h-14 w-full shrink-0 rounded-none border-b bg-transparent px-4 py-2.5">
-            <TabsTrigger
-              className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
-              value="properties"
-            >
-              Properties
-            </TabsTrigger>
-          </TabsList>
           <TabsContent
             className="flex flex-col overflow-hidden"
             value="properties"
@@ -362,14 +351,6 @@ export const PanelInner = () => {
         onValueChange={setActiveTab}
         value={activeTab}
       >
-        <TabsList className="h-14 w-full shrink-0 rounded-none border-b bg-transparent px-4 py-2.5">
-          <TabsTrigger
-            className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
-            value="properties"
-          >
-            Properties
-          </TabsTrigger>
-        </TabsList>
         <TabsContent
           className="flex flex-col overflow-hidden"
           value="properties"
