@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BlockEditor } from "@/components/ui/block-editor";
 import { Button } from "@/components/ui/button";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ import {
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
 import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Tabs, TabsContent } from "../ui/tabs";
 
 // Multi-selection panel component
 const MultiSelectionPanel = ({
@@ -388,6 +389,19 @@ export const PanelInner = () => {
                 onChange={handleUpdateDescription}
                 placeholder="Add a description..."
                 value={selectedNode.data.description || ""}
+              />
+            </div>
+
+            {/* Block editor for rich content */}
+            <div className="mb-6">
+              <Label className="mb-3 block text-muted-foreground text-xs">
+                Journal your journey
+              </Label>
+              <BlockEditor
+                disabled={isGenerating || !isOwner}
+                onChange={() => {}}
+                placeholder="Start writing or type '/' for commands..."
+                value=""
               />
             </div>
 

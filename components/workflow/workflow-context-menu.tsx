@@ -124,12 +124,12 @@ export function WorkflowContextMenu({
   // Check if the node is a milestone (can't be deleted)
   const isMilestoneNode = Boolean(
     menuState.nodeId &&
-    nodes.find((n) => n.id === menuState.nodeId)?.data.type === "milestone"
+      nodes.find((n) => n.id === menuState.nodeId)?.data.type === "milestone"
   );
 
   const isAddNode = Boolean(
     menuState.nodeId &&
-    nodes.find((n) => n.id === menuState.nodeId)?.type === "add"
+      nodes.find((n) => n.id === menuState.nodeId)?.type === "add"
   );
 
   const getNodeLabel = () => {
@@ -157,7 +157,7 @@ export function WorkflowContextMenu({
         <MenuItem
           disabled={isMilestoneNode}
           icon={<Trash2 className="size-4" />}
-          label={`Delete`}
+          label={"Delete"}
           onClick={handleDeleteNode}
           variant="destructive"
         />

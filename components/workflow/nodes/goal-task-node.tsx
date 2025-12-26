@@ -60,11 +60,11 @@ export const GoalTaskNode = memo(
         {selected && (
           <>
             <NodeResizeControl
+              autoScale={false}
               minHeight={minHeight}
               minWidth={minWidth}
               onResizeEnd={handleResizeEnd}
               position="top"
-              autoScale={false}
               style={{
                 ...controlStyle,
                 top: 2.5,
@@ -75,11 +75,11 @@ export const GoalTaskNode = memo(
               }}
             />
             <NodeResizeControl
+              autoScale={false}
               minHeight={minHeight}
               minWidth={minWidth}
               onResizeEnd={handleResizeEnd}
               position="right"
-              autoScale={false}
               style={{
                 ...controlStyle,
                 right: 2.5,
@@ -90,11 +90,11 @@ export const GoalTaskNode = memo(
               }}
             />
             <NodeResizeControl
+              autoScale={false}
               minHeight={minHeight}
               minWidth={minWidth}
               onResizeEnd={handleResizeEnd}
               position="bottom"
-              autoScale={false}
               style={{
                 ...controlStyle,
                 bottom: 2.5,
@@ -105,11 +105,11 @@ export const GoalTaskNode = memo(
               }}
             />
             <NodeResizeControl
+              autoScale={false}
               minHeight={minHeight}
               minWidth={minWidth}
               onResizeEnd={handleResizeEnd}
               position="left"
-              autoScale={false}
               style={{
                 ...controlStyle,
                 left: 2.5,
