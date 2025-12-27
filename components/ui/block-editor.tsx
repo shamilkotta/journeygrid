@@ -244,18 +244,18 @@ export function BlockEditor({
       attributes: {
         class: cn(
           "block-editor outline-none focus:outline-none min-h-[8rem]",
-          // Empty placeholder styles for all empty nodes
-          "[&_.is-empty]:before:content-[attr(data-placeholder)]",
-          "[&_.is-empty]:before:text-muted-foreground/40",
-          "[&_.is-empty]:before:float-left",
-          "[&_.is-empty]:before:h-0",
-          "[&_.is-empty]:before:pointer-events-none",
-          // Also support is-editor-empty for first node
-          "[&_.is-editor-empty]:before:content-[attr(data-placeholder)]",
-          "[&_.is-editor-empty]:before:text-muted-foreground/40",
-          "[&_.is-editor-empty]:before:float-left",
-          "[&_.is-editor-empty]:before:h-0",
-          "[&_.is-editor-empty]:before:pointer-events-none",
+          // Empty placeholder styles for all empty nodes (excluding table cells)
+          "[&_.is-empty:not(th):not(td)]:before:content-[attr(data-placeholder)]",
+          "[&_.is-empty:not(th):not(td)]:before:text-muted-foreground/40",
+          "[&_.is-empty:not(th):not(td)]:before:float-left",
+          "[&_.is-empty:not(th):not(td)]:before:h-0",
+          "[&_.is-empty:not(th):not(td)]:before:pointer-events-none",
+          // Also support is-editor-empty for first node (excluding table cells)
+          "[&_.is-editor-empty:not(th):not(td)]:before:content-[attr(data-placeholder)]",
+          "[&_.is-editor-empty:not(th):not(td)]:before:text-muted-foreground/40",
+          "[&_.is-editor-empty:not(th):not(td)]:before:float-left",
+          "[&_.is-editor-empty:not(th):not(td)]:before:h-0",
+          "[&_.is-editor-empty:not(th):not(td)]:before:pointer-events-none",
           // Paragraph styles
           "[&_p]:text-sm [&_p]:leading-relaxed [&_p]:text-foreground",
           "[&_p]:m-0 [&_p]:mb-2 [&_p:last-child]:mb-0",
@@ -292,9 +292,11 @@ export function BlockEditor({
           "[&_.block-editor-link]:text-primary [&_.block-editor-link]:underline [&_.block-editor-link]:underline-offset-2",
           "[&_.block-editor-link:hover]:text-primary/80 [&_.block-editor-link]:cursor-pointer",
           // Table styles
-          "[&_.block-editor-table]:w-full [&_.block-editor-table]:border-collapse [&_.block-editor-table]:my-3",
-          "[&_.block-editor-table_th]:border [&_.block-editor-table_th]:border-muted-foreground/30 [&_.block-editor-table_th]:p-2 [&_.block-editor-table_th]:bg-muted [&_.block-editor-table_th]:font-semibold [&_.block-editor-table_th]:text-left",
-          "[&_.block-editor-table_td]:border [&_.block-editor-table_td]:border-muted-foreground/30 [&_.block-editor-table_td]:p-2",
+          "[&_.block-editor-table]:w-full [&_.block-editor-table]:border-collapse [&_.block-editor-table]:my-3 [&_.block-editor-table]:border [&_.block-editor-table]:border-border [&_.block-editor-table]:rounded-md [&_.block-editor-table]:overflow-hidden",
+          "[&_.block-editor-table_th]:border [&_.block-editor-table_th]:border-border [&_.block-editor-table_th]:border-solid [&_.block-editor-table_th]:border-[1px] [&_.block-editor-table_th]:px-4 [&_.block-editor-table_th]:py-3 [&_.block-editor-table_th]:bg-muted [&_.block-editor-table_th]:font-semibold [&_.block-editor-table_th]:text-left [&_.block-editor-table_th]:text-sm [&_.block-editor-table_th]:min-w-[100px]",
+          "[&_.block-editor-table_td]:border [&_.block-editor-table_td]:border-border [&_.block-editor-table_td]:border-solid [&_.block-editor-table_td]:border-[1px] [&_.block-editor-table_td]:px-4 [&_.block-editor-table_td]:py-3 [&_.block-editor-table_td]:text-sm [&_.block-editor-table_td]:min-w-[100px]",
+          "[&_.block-editor-table_th.is-empty]:before:content-none [&_.block-editor-table_th.is-empty]:before:hidden",
+          "[&_.block-editor-table_td.is-empty]:before:content-none [&_.block-editor-table_td.is-empty]:before:hidden",
           // Image styles
           "[&_.block-editor-image]:max-w-full [&_.block-editor-image]:h-auto [&_.block-editor-image]:rounded-lg [&_.block-editor-image]:my-3"
         ),

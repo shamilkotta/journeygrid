@@ -265,3 +265,20 @@
     bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem) !important;
   }
 }
+
+/* Block editor table styles */
+.block-editor-table {
+  border: 1px solid var(--border) !important;
+  border-collapse: collapse !important;
+}
+
+.block-editor-table th,
+.block-editor-table td {
+  border: 1px solid var(--border) !important;
+}
+
+.block-editor-table th.is-empty::before,
+.block-editor-table td.is-empty::before {
+  content: none !important;
+  display: none !important;
+}
