@@ -1,25 +1,15 @@
 "use server";
 
-import { nanoid } from "nanoid";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { journeys } from "@/lib/db/schema";
+import { journeyNodes, journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
-
-function createDefaultMilestoneNode() {
-  return {
-    id: nanoid(),
-    type: "milestone" as const,
-    position: { x: 0, y: 0 },
-    data: {
-      label: "Start",
-      description: "",
-      type: "milestone" as const,
-    },
-  };
-}
+import {
+  createDefaultMilestoneNode,
+  transformNodeToDB,
+} from "@/lib/utils/node-transforms";
 
 export const newJourney = async () => {
   const session = await auth.api.getSession({
@@ -35,19 +25,32 @@ export const newJourney = async () => {
     }
     user = result.user;
   }
-  const node = createDefaultMilestoneNode();
   const journeyId = generateId();
+  const node = transformNodeToDB(createDefaultMilestoneNode(), journeyId);
   const [newJourney] = await db
     .insert(journeys)
     .values({
       id: journeyId,
       name: "Untitled Journey",
       userId: user.id,
-      nodes: [node],
       edges: [],
+      journalId: null,
       visibility: "private",
     })
     .returning();
+
+  // Then create the default milestone node
+  await db.insert(journeyNodes).values({
+    id: node.id,
+    journeyId,
+    title: node.title,
+    icon: node.icon,
+    description: node.description,
+    type: node.type,
+    positionX: node.positionX,
+    positionY: node.positionY,
+    journalId: null,
+  });
 
   redirect(`/j/${newJourney.id}`);
 };

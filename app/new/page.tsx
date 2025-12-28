@@ -1,22 +1,13 @@
-import { nanoid } from "nanoid";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeyNodes, journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
-
-function createDefaultMilestoneNode() {
-  return {
-    id: nanoid(),
-    title: "Start",
-    icon: null,
-    description: "",
-    type: "milestone" as const,
-    positionX: 0,
-    positionY: 0,
-  };
-}
+import {
+  createDefaultMilestoneNode,
+  transformNodeToDB,
+} from "@/lib/utils/node-transforms";
 
 export default async function NewJourneyPage() {
   const session = await auth.api.getSession({
@@ -28,9 +19,7 @@ export default async function NewJourneyPage() {
   }
 
   const journeyId = generateId();
-  const node = createDefaultMilestoneNode();
-
-  // Create journey first
+  const node = transformNodeToDB(createDefaultMilestoneNode(), journeyId);
   const [newJourney] = await db
     .insert(journeys)
     .values({

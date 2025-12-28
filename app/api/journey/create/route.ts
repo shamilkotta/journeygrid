@@ -1,79 +1,14 @@
-import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { type JourneyNodeDB, journeyNodes, journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
-
-type NodeType = "goal" | "task" | "milestone" | "add";
-
-// Helper function to create a default milestone node
-function createDefaultMilestoneNode() {
-  return {
-    id: nanoid(),
-    type: "milestone" as const,
-    position: { x: 0, y: 0 },
-    data: {
-      label: "Start",
-      description: "",
-      type: "milestone" as const,
-    },
-  };
-}
-
-// Transform ReactFlow node to DB format
-function transformNodeToDB(
-  node: {
-    id: string;
-    position: { x: number; y: number };
-    data: {
-      label?: string;
-      description?: string;
-      icon?: string;
-      type?: string;
-      journalId?: string;
-    };
-  },
-  journeyId: string
-) {
-  const nodeType = (node.data.type || "goal") as NodeType;
-  return {
-    id: node.id,
-    journeyId,
-    title: node.data.label || "Untitled",
-    icon: node.data.icon || null,
-    description: node.data.description || null,
-    type: nodeType,
-    positionX: node.position.x,
-    positionY: node.position.y,
-    journalId: node.data.journalId || null,
-  };
-}
-
-// Transform DB node to ReactFlow format
-function transformNodeToReactFlow(dbNode: {
-  id: string;
-  title: string;
-  icon: string | null;
-  description: string | null;
-  type: string;
-  positionX: number;
-  positionY: number;
-  journalId: string | null;
-}) {
-  return {
-    id: dbNode.id,
-    type: "default",
-    position: { x: dbNode.positionX, y: dbNode.positionY },
-    data: {
-      label: dbNode.title,
-      description: dbNode.description,
-      icon: dbNode.icon,
-      type: dbNode.type,
-      journalId: dbNode.journalId,
-    },
-  };
-}
+import {
+  createDefaultMilestoneNode,
+  type ReactFlowNodeInput,
+  transformNodeToDB,
+  transformNodeToReactFlow,
+} from "@/lib/utils/node-transforms";
 
 export async function POST(request: Request) {
   try {
@@ -105,7 +40,6 @@ export async function POST(request: Request) {
     // Use provided ID or generate a new one
     const journeyId = body.id || generateId();
 
-    // Create the journey first (without nodes)
     const [newJourney] = await db
       .insert(journeys)
       .values({
@@ -118,29 +52,17 @@ export async function POST(request: Request) {
       })
       .returning();
 
-    // Insert nodes into journeyNodes table
-    const insertedNodes: JourneyNodeDB[] = [];
-    for (const node of nodes) {
-      const dbNode = transformNodeToDB(node, journeyId);
-      const [inserted] = await db
-        .insert(journeyNodes)
-        .values({
-          id: dbNode.id,
-          journeyId: dbNode.journeyId,
-          title: dbNode.title,
-          icon: dbNode.icon,
-          description: dbNode.description,
-          type: dbNode.type,
-          positionX: dbNode.positionX,
-          positionY: dbNode.positionY,
-          journalId: dbNode.journalId,
-        })
-        .returning();
-      insertedNodes.push(inserted);
-    }
+    const dbNodesToInsert = nodes.map((node: ReactFlowNodeInput) =>
+      transformNodeToDB(node, journeyId)
+    );
 
-    // Transform nodes to ReactFlow format for response
-    const responseNodes = insertedNodes.map(transformNodeToReactFlow);
+    // Insert all nodes in one query
+    await db.insert(journeyNodes).values(dbNodesToInsert);
+
+    // Return the normalized nodes we just persisted (no extra DB round-trip)
+    const responseNodes = (dbNodesToInsert as JourneyNodeDB[]).map(
+      transformNodeToReactFlow
+    );
 
     return NextResponse.json({
       id: newJourney.id,
