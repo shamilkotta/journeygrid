@@ -46,7 +46,8 @@ export function createDefaultMilestoneNode(): ReactFlowNodeInput {
 // Transform ReactFlow node to DB format
 export function transformNodeToDB(
   node: ReactFlowNodeInput,
-  journeyId: string
+  journeyId: string,
+  isNewNode: boolean = false
 ): {
   id: string;
   journeyId: string;
@@ -60,7 +61,7 @@ export function transformNodeToDB(
 } {
   const nodeType = (node.data.type || "goal") as NodeType;
   return {
-    id: node.id,
+    id: isNewNode ? nanoid() : node.id,
     journeyId,
     title: node.data.label || "Untitled",
     icon: node.data.icon || null,

@@ -86,7 +86,7 @@ export async function PATCH(request: Request) {
       updates.name = body.name;
     }
     if (body.email !== undefined) {
-      updates.email = body.email;
+      // updates.email = body.email;
     }
 
     await db.update(users).set(updates).where(eq(users.id, session.user.id));

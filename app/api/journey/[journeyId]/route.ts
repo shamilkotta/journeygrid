@@ -1,26 +1,13 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { journeys } from "@/lib/db/schema";
-
-// Helper to strip sensitive data from nodes for public viewing
-function sanitizeNodesForPublicView(
-  nodes: Record<string, unknown>[]
-): Record<string, unknown>[] {
-  return nodes.map((node) => {
-    const sanitizedNode = { ...node };
-    if (
-      sanitizedNode.data &&
-      typeof sanitizedNode.data === "object" &&
-      sanitizedNode.data !== null
-    ) {
-      const data = { ...(sanitizedNode.data as Record<string, unknown>) };
-      sanitizedNode.data = data;
-    }
-    return sanitizedNode;
-  });
-}
+import { journeyNodes, journeys } from "@/lib/db/schema";
+import {
+  type ReactFlowNodeInput,
+  transformNodeToDB,
+  transformNodeToReactFlow,
+} from "@/lib/utils/node-transforms";
 
 export async function GET(
   request: Request,
@@ -48,14 +35,23 @@ export async function GET(
       return NextResponse.json({ error: "Journey not found" }, { status: 404 });
     }
 
-    // For public journeys viewed by non-owners, sanitize sensitive data
+    // Fetch nodes from journeyNodes table
+    const nodes = await db.query.journeyNodes.findMany({
+      where: eq(journeyNodes.journeyId, journeyId),
+    });
+
+    // Transform nodes to ReactFlow format
+    const transformedNodes = nodes.map(transformNodeToReactFlow);
+
     const responseData = {
-      ...journey,
-      nodes: isOwner
-        ? journey.nodes
-        : sanitizeNodesForPublicView(
-            journey.nodes as Record<string, unknown>[]
-          ),
+      id: journey.id,
+      name: journey.name,
+      description: journey.description,
+      userId: journey.userId,
+      edges: journey.edges,
+      journalId: journey.journalId,
+      visibility: journey.visibility,
+      nodes: transformedNodes,
       createdAt: journey.createdAt.toISOString(),
       updatedAt: journey.updatedAt.toISOString(),
       isOwner,
@@ -74,9 +70,11 @@ export async function GET(
 }
 
 // Helper to build update data from request body
-function buildUpdateData(body: Record<string, any>): Record<string, unknown> {
+function buildUpdateData(
+  body: Record<string, unknown>
+): Record<string, unknown> {
   const updateData: Record<string, unknown> = {
-    updatedAt: body.updatedAt ? new Date(body.updatedAt) : new Date(),
+    updatedAt: body.updatedAt ? new Date(body.updatedAt as string) : new Date(),
   };
 
   if (body.name !== undefined) {
@@ -85,14 +83,14 @@ function buildUpdateData(body: Record<string, any>): Record<string, unknown> {
   if (body.description !== undefined) {
     updateData.description = body.description;
   }
-  if (body.nodes !== undefined) {
-    updateData.nodes = body.nodes;
-  }
   if (body.edges !== undefined) {
     updateData.edges = body.edges;
   }
   if (body.visibility !== undefined) {
     updateData.visibility = body.visibility;
+  }
+  if (body.journalId !== undefined) {
+    updateData.journalId = body.journalId;
   }
 
   return updateData;
@@ -141,6 +139,7 @@ export async function PATCH(
     const updateData = buildUpdateData(body);
     updateData.userId = session.user.id;
 
+    // Update journey metadata (name, description, edges, visibility, journalId)
     const [updatedJourney] = await db
       .update(journeys)
       .set(updateData)
@@ -151,8 +150,81 @@ export async function PATCH(
       return NextResponse.json({ error: "Journey not found" }, { status: 404 });
     }
 
+    // Handle nodes update if provided
+    if (body.nodes !== undefined && Array.isArray(body.nodes)) {
+      // Get existing node IDs
+      const existingNodes = await db.query.journeyNodes.findMany({
+        where: eq(journeyNodes.journeyId, journeyId),
+        columns: { id: true },
+      });
+      const existingNodeIds = new Set(existingNodes.map((n) => n.id));
+
+      // Get incoming node IDs
+      const incomingNodeIds = new Set(
+        body.nodes.map((n: { id: string }) => n.id)
+      );
+
+      // Delete nodes that are no longer present
+      const nodesToDelete = [...existingNodeIds].filter(
+        (id) => !incomingNodeIds.has(id)
+      );
+      if (nodesToDelete.length > 0) {
+        await db
+          .delete(journeyNodes)
+          .where(inArray(journeyNodes.id, nodesToDelete));
+      }
+
+      // Upsert nodes
+      for (const node of body.nodes as ReactFlowNodeInput[]) {
+        if (existingNodeIds.has(node.id)) {
+          // Update existing node
+          const dbNode = transformNodeToDB(node, journeyId);
+          await db
+            .update(journeyNodes)
+            .set({
+              title: dbNode.title,
+              icon: dbNode.icon,
+              description: dbNode.description,
+              type: dbNode.type,
+              positionX: dbNode.positionX,
+              positionY: dbNode.positionY,
+              journalId: dbNode.journalId,
+              updatedAt: new Date(),
+            })
+            .where(eq(journeyNodes.id, node.id));
+        } else {
+          // Insert new node
+          const dbNode = transformNodeToDB(node, journeyId, true);
+          await db.insert(journeyNodes).values({
+            id: dbNode.id,
+            journeyId: dbNode.journeyId,
+            title: dbNode.title,
+            icon: dbNode.icon,
+            description: dbNode.description,
+            type: dbNode.type,
+            positionX: dbNode.positionX,
+            positionY: dbNode.positionY,
+            journalId: dbNode.journalId,
+          });
+        }
+      }
+    }
+
+    // Fetch updated nodes
+    const nodes = await db.query.journeyNodes.findMany({
+      where: eq(journeyNodes.journeyId, journeyId),
+    });
+    const transformedNodes = nodes.map(transformNodeToReactFlow);
+
     return NextResponse.json({
-      ...updatedJourney,
+      id: updatedJourney.id,
+      name: updatedJourney.name,
+      description: updatedJourney.description,
+      userId: updatedJourney.userId,
+      edges: updatedJourney.edges,
+      journalId: updatedJourney.journalId,
+      visibility: updatedJourney.visibility,
+      nodes: transformedNodes,
       createdAt: updatedJourney.createdAt.toISOString(),
       updatedAt: updatedJourney.updatedAt.toISOString(),
       isOwner: true,
