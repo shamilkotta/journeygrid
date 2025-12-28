@@ -278,7 +278,10 @@
 }
 
 .block-editor-table th.is-empty::before,
-.block-editor-table td.is-empty::before {
+.block-editor-table td.is-empty::before,
+.block-editor-table th.is-editor-empty::before,
+.block-editor-table td.is-editor-empty::before {
   content: none !important;
   display: none !important;
+  visibility: hidden !important;
 }

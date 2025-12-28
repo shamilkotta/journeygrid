@@ -1,5 +1,12 @@
 import { relations } from "drizzle-orm";
-import { boolean, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  real,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { generateId } from "../utils/id";
 
 // Better Auth tables
@@ -55,6 +62,22 @@ export const verifications = pgTable("verifications", {
   updatedAt: timestamp("updated_at"),
 });
 
+// Journals table for storing journal content (used by journeys and nodes)
+export const journals = pgTable("journals", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  content: text("content"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Journal node type
+export type JourneyNodeType = "goal" | "task" | "milestone" | "add";
+
 // Journey visibility type
 export type JourneyVisibility = "private" | "public";
 
@@ -68,8 +91,9 @@ export const journeys = pgTable("journeys", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
-  nodes: jsonb("nodes").notNull().$type<any[]>(),
+  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
   edges: jsonb("edges").notNull().$type<any[]>(),
+  journalId: text("journal_id").references(() => journals.id),
   visibility: text("visibility")
     .notNull()
     .default("private")
@@ -78,40 +102,60 @@ export const journeys = pgTable("journeys", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Journey nodes table for extended node data (todos, resources, notes, comments, dates)
+// Journey nodes table - stores all node data for a journey
 export const journeyNodes = pgTable("journey_nodes", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => generateId()),
-  nodeId: text("node_id").notNull(), // References node.id in JSONB
   journeyId: text("journey_id")
     .notNull()
-    .references(() => journeys.id),
-  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
-  todos: jsonb("todos").$type<any[]>(),
-  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
-  resources: jsonb("resources").$type<any[]>(),
-  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
-  notes: jsonb("notes").$type<any[]>(),
-  // biome-ignore lint/suspicious/noExplicitAny: JSONB type - structure validated at application level
-  comments: jsonb("comments").$type<any[]>(),
-  milestoneDate: timestamp("milestone_date"),
-  deadline: timestamp("deadline"),
-  startDate: timestamp("start_date"),
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  icon: text("icon"),
+  description: text("description"),
+  type: text("type").notNull().$type<JourneyNodeType>(),
+  positionX: real("position_x").notNull(),
+  positionY: real("position_y").notNull(),
+  journalId: text("journal_id").references(() => journals.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Relations
+export const journalsRelations = relations(journals, ({ one }) => ({
+  user: one(users, {
+    fields: [journals.userId],
+    references: [users.id],
+  }),
+}));
+
+export const journeysRelations = relations(journeys, ({ one, many }) => ({
+  user: one(users, {
+    fields: [journeys.userId],
+    references: [users.id],
+  }),
+  journal: one(journals, {
+    fields: [journeys.journalId],
+    references: [journals.id],
+  }),
+  nodes: many(journeyNodes),
+}));
+
 export const journeyNodesRelations = relations(journeyNodes, ({ one }) => ({
   journey: one(journeys, {
     fields: [journeyNodes.journeyId],
     references: [journeys.id],
   }),
+  journal: one(journals, {
+    fields: [journeyNodes.journalId],
+    references: [journals.id],
+  }),
 }));
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Journal = typeof journals.$inferSelect;
+export type NewJournal = typeof journals.$inferInsert;
 export type Journey = typeof journeys.$inferSelect;
 export type NewJourney = typeof journeys.$inferInsert;
 export type JourneyNodeDB = typeof journeyNodes.$inferSelect;
