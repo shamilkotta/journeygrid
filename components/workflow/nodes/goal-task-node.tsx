@@ -134,7 +134,7 @@ export const GoalTaskNode = memo(
               className="size-5 shrink-0 text-muted-foreground"
               strokeWidth={1.5}
             />
-            <NodeTitle className="line-clamp-1 flex-1 text-left font-medium text-lg leading-none">
+            <NodeTitle className="line-clamp-1 flex-1 text-left font-medium text-lg">
               {displayTitle}
             </NodeTitle>
           </div>

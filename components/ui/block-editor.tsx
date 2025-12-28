@@ -103,6 +103,9 @@ export function BlockEditor({
       }),
       Placeholder.configure({
         placeholder: ({ node }) => {
+          if (node.type.name === "table") {
+            return "";
+          }
           if (node.type.name === "heading") {
             const level = node.attrs.level;
             return `Heading ${level}`;

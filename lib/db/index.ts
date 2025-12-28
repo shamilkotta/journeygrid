@@ -5,9 +5,12 @@ import postgres from "postgres";
 
 import {
   accounts,
+  journals,
+  journalsRelations,
   journeyNodes,
   journeyNodesRelations,
   journeys,
+  journeysRelations,
   sessions,
   users,
   verifications,
@@ -19,7 +22,10 @@ const schema = {
   sessions,
   accounts,
   verifications,
+  journals,
+  journalsRelations,
   journeys,
+  journeysRelations,
   journeyNodes,
   journeyNodesRelations,
 };
