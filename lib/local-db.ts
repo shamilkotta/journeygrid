@@ -10,6 +10,13 @@ import type { JourneyEdge, JourneyNode } from "./workflow-store";
 
 // Database schema
 interface JourneyDBSchema extends DBSchema {
+  journals: {
+    key: string;
+    value: LocalJournal;
+    indexes: {
+      "by-updated": string;
+    };
+  };
   journeys: {
     key: string;
     value: LocalJourney;
@@ -25,6 +32,14 @@ interface JourneyDBSchema extends DBSchema {
 }
 
 type JourneyVisibility = "private" | "public";
+
+type LocalJournal = {
+  id: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 // Local journey type
 export type LocalJourney = {
@@ -154,32 +169,6 @@ export async function deleteLocalJourney(id: string): Promise<boolean> {
   return true;
 }
 
-// Duplicate a journey
-export async function duplicateLocalJourney(
-  id: string
-): Promise<LocalJourney | undefined> {
-  const db = await getDB();
-  const existing = await db.get("journeys", id);
-
-  if (!existing) {
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const duplicated: LocalJourney = {
-    ...existing,
-    id: nanoid(),
-    name: `${existing.name} (Copy)`,
-    createdAt: now,
-    updatedAt: now,
-    syncedAt: undefined, // New copy, not synced yet
-    isDirty: true,
-  };
-
-  await db.put("journeys", duplicated);
-  return duplicated;
-}
-
 // Get the most recent journey
 export async function getMostRecentLocalJourney(): Promise<
   LocalJourney | undefined
@@ -265,71 +254,8 @@ export async function markJourneySynced(id: string): Promise<void> {
   await db.put("journeys", updated);
 }
 
-// Insert or update a journey from server data (uses same ID)
-export async function upsertFromServer(
-  serverJourney: Omit<LocalJourney, "isDirty" | "syncedAt">
-): Promise<LocalJourney> {
-  const db = await getDB();
-  const existing = await db.get("journeys", serverJourney.id);
-
-  const journey: LocalJourney = {
-    ...serverJourney,
-    isDirty: false,
-    syncedAt: new Date().toISOString(),
-  };
-
-  // If exists locally and is dirty, we need to handle conflict
-  // Server takes priority per the plan, so we overwrite
-  if (existing?.isDirty) {
-    console.warn(
-      `[Sync] Overwriting dirty local journey ${serverJourney.id} with server data`
-    );
-  }
-
-  await db.put("journeys", journey);
-  return journey;
-}
-
-// Bulk upsert journeys from server
-export async function bulkUpsertFromServer(
-  serverJourneys: Omit<LocalJourney, "isDirty" | "syncedAt">[]
-): Promise<void> {
-  const db = await getDB();
-  const tx = db.transaction("journeys", "readwrite");
-
-  for (const serverJourney of serverJourneys) {
-    const journey: LocalJourney = {
-      ...serverJourney,
-      isDirty: false,
-      syncedAt: new Date().toISOString(),
-    };
-    await tx.store.put(journey);
-  }
-
-  await tx.done;
-}
-
 // Get all local journey IDs
 export async function getAllLocalJourneyIds(): Promise<string[]> {
   const db = await getDB();
   return db.getAllKeys("journeys");
-}
-
-// Delete journeys that exist locally but not on server (for cleanup after sync)
-export async function deleteJourneysNotInList(
-  keepIds: string[]
-): Promise<void> {
-  const db = await getDB();
-  const allIds = await db.getAllKeys("journeys");
-  const keepSet = new Set(keepIds);
-
-  const tx = db.transaction("journeys", "readwrite");
-  for (const id of allIds) {
-    // Only delete if it was synced before (has syncedAt) but no longer on server
-    const journey = await tx.store.get(id);
-    if (journey?.syncedAt && !keepSet.has(id)) {
-      await tx.store.delete(id);
-    }
-  }
-  await tx.done;
 }

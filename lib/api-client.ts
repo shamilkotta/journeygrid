@@ -3,14 +3,7 @@
  * Replaces server actions with API endpoints
  */
 
-import type {
-  Comment,
-  JourneyEdge,
-  JourneyNode,
-  Note,
-  Resource,
-  Todo,
-} from "./workflow-store";
+import type { JourneyEdge, JourneyNode } from "./workflow-store";
 
 // Journey data types
 export type JourneyVisibility = "private" | "public";
@@ -22,15 +15,15 @@ export type JourneyData = {
   description: string | null;
   nodes: JourneyNode[];
   edges: JourneyEdge[];
+  journalId: string | null;
   visibility: JourneyVisibility;
   createdAt: string;
   updatedAt: string;
 };
 
-export type SavedJourney = {
+export type JournalData = {
   id: string;
-  name: string;
-  visibility: JourneyVisibility;
+  content: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -93,9 +86,15 @@ type StreamMessage = {
   error?: string;
 };
 
+// Streaming data type - partial during streaming, cast to full JourneyData at end
+type StreamingJourneyData = Partial<JourneyData> & {
+  nodes: JourneyNode[];
+  edges: JourneyEdge[];
+};
+
 type StreamState = {
   buffer: string;
-  currentData: JourneyData;
+  currentData: StreamingJourneyData;
 };
 
 type OperationHandler = (
@@ -216,7 +215,7 @@ function applyOperation(
 
 function processStreamLine(
   line: string,
-  onUpdate: (data: JourneyData) => void,
+  onUpdate: (data: StreamingJourneyData) => void,
   state: StreamState
 ): void {
   if (!line.trim()) {
@@ -241,7 +240,7 @@ function processStreamLine(
 function processStreamChunk(
   value: Uint8Array,
   decoder: TextDecoder,
-  onUpdate: (data: JourneyData) => void,
+  onUpdate: (data: StreamingJourneyData) => void,
   state: StreamState
 ): void {
   state.buffer += decoder.decode(value, { stream: true });
@@ -270,13 +269,13 @@ export const aiApi = {
     }),
   generateStream: async (
     prompt: string,
-    onUpdate: (data: JourneyData) => void,
+    onUpdate: (data: StreamingJourneyData) => void,
     existingJourney?: {
       nodes: JourneyNode[];
       edges: JourneyEdge[];
       name?: string;
     }
-  ): Promise<JourneyData> => {
+  ): Promise<StreamingJourneyData> => {
     const response = await fetch("/api/ai/generate", {
       method: "POST",
       headers: {
@@ -377,16 +376,6 @@ export const journeyApi = {
       method: "POST",
     }),
 
-  // Get current journey state
-  getCurrent: () => apiCall<JourneyData>("/api/journey/current"),
-
-  // Save current journey state
-  saveCurrent: (nodes: JourneyNode[], edges: JourneyEdge[]) =>
-    apiCall<JourneyData>("/api/journey/current", {
-      method: "POST",
-      body: JSON.stringify({ nodes, edges }),
-    }),
-
   // Download journey
   download: (id: string) =>
     apiCall<{
@@ -395,111 +384,8 @@ export const journeyApi = {
       error?: string;
     }>(`/api/journey/${id}/download`),
 
-  // Get node data (todos, resources, notes, comments, dates)
-  getNodeData: (journeyId: string, nodeId: string) =>
-    apiCall<{
-      todos?: Todo[];
-      resources?: Resource[];
-      notes?: Note[];
-      comments?: Comment[];
-      milestoneDate?: string;
-      deadline?: string;
-      startDate?: string;
-    }>(`/api/journey/${journeyId}/nodes/${nodeId}`),
-
-  // Update node data
-  updateNodeData: (
-    journeyId: string,
-    nodeId: string,
-    data: {
-      todos?: Todo[];
-      resources?: Resource[];
-      notes?: Note[];
-      comments?: Comment[];
-      milestoneDate?: string;
-      deadline?: string;
-      startDate?: string;
-    }
-  ) =>
-    apiCall<{ success: boolean }>(`/api/journey/${journeyId}/nodes/${nodeId}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    }),
-
-  // Update node todos
-  updateNodeTodos: (journeyId: string, nodeId: string, todos: Todo[]) =>
-    apiCall<{ success: boolean }>(
-      `/api/journey/${journeyId}/nodes/${nodeId}/todos`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ todos }),
-      }
-    ),
-
-  // Update node resources
-  updateNodeResources: (
-    journeyId: string,
-    nodeId: string,
-    resources: Resource[]
-  ) =>
-    apiCall<{ success: boolean }>(
-      `/api/journey/${journeyId}/nodes/${nodeId}/resources`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ resources }),
-      }
-    ),
-
-  // Add note
-  addNote: (journeyId: string, nodeId: string, note: Note) =>
-    apiCall<{ success: boolean }>(
-      `/api/journey/${journeyId}/nodes/${nodeId}/notes`,
-      {
-        method: "POST",
-        body: JSON.stringify({ note }),
-      }
-    ),
-
-  // Add comment
-  addComment: (journeyId: string, nodeId: string, comment: Comment) =>
-    apiCall<{ success: boolean }>(
-      `/api/journey/${journeyId}/nodes/${nodeId}/comments`,
-      {
-        method: "POST",
-        body: JSON.stringify({ comment }),
-      }
-    ),
-
-  // Update node dates
-  updateNodeDates: (
-    journeyId: string,
-    nodeId: string,
-    dates: {
-      milestoneDate?: string;
-      deadline?: string;
-      startDate?: string;
-    }
-  ) =>
-    apiCall<{ success: boolean }>(
-      `/api/journey/${journeyId}/nodes/${nodeId}/dates`,
-      {
-        method: "PATCH",
-        body: JSON.stringify(dates),
-      }
-    ),
-
   // Bulk sync journeys (create or update multiple)
-  sync: (
-    journeys: Array<{
-      id: string;
-      name: string;
-      description?: string | null;
-      nodes: JourneyNode[];
-      edges: JourneyEdge[];
-      visibility?: JourneyVisibility;
-      updatedAt?: string;
-    }>
-  ) =>
+  sync: (journeys: Array<JourneyData>) =>
     apiCall<{
       created: string[];
       updated: string[];
@@ -515,5 +401,6 @@ export const journeyApi = {
 export const api = {
   ai: aiApi,
   user: userApi,
+  journal: journalApi,
   journey: journeyApi,
 };

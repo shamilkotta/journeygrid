@@ -28,6 +28,9 @@ const JourneyPage = async ({ params }: JourneyPageProps) => {
 
   let journey: any = await db.query.journeys.findFirst({
     where: or(...orCond),
+    with: {
+      journal: true,
+    },
   });
 
   if (journey) {
@@ -36,6 +39,14 @@ const JourneyPage = async ({ params }: JourneyPageProps) => {
       updatedAt: journey.updatedAt.toISOString(),
       createdAt: journey.createdAt.toISOString(),
       isOwner: journey.userId == session?.user.id,
+      journal: journey.journal
+        ? {
+            id: journey.journal.id,
+            content: journey.journal.content,
+            createdAt: journey.journal.createdAt.toISOString(),
+            updatedAt: journey.journal.updatedAt.toISOString(),
+          }
+        : null,
     };
   }
 

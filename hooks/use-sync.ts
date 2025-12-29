@@ -20,9 +20,9 @@ type UseSyncReturn = {
   // Whether user is authenticated (sync enabled)
   isAuthenticated: boolean;
   // Trigger a debounced sync for a specific journey
-  triggerSync: (journeyId?: string) => void;
+  triggerSync: (journeyId: string) => void;
   // Force immediate sync
-  triggerForceSync: (journeyId?: string) => Promise<boolean>;
+  triggerForceSync: (journeyId: string) => Promise<boolean>;
   // Perform full sync (download + upload)
   performFullSync: () => Promise<SyncResult>;
   // Whether sync is currently in progress
@@ -58,7 +58,7 @@ export function useSync(): UseSyncReturn {
 
   // Trigger debounced sync (only if authenticated)
   const triggerSync = useCallback(
-    (journeyId?: string) => {
+    (journeyId: string) => {
       if (!isAuthenticated) {
         return;
       }
@@ -69,7 +69,7 @@ export function useSync(): UseSyncReturn {
 
   // Force immediate sync (only if authenticated)
   const triggerForceSync = useCallback(
-    async (journeyId?: string): Promise<boolean> => {
+    async (journeyId: string): Promise<boolean> => {
       if (!isAuthenticated) {
         return false;
       }

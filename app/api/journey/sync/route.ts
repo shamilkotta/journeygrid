@@ -75,7 +75,7 @@ async function syncNodes(journeyId: string, nodes: SyncNode[]) {
         .where(eq(journeyNodes.id, node.id));
     } else {
       // Insert new node
-      const dbNode = transformNodeToDB(node, journeyId, true);
+      const dbNode = transformNodeToDB(node, journeyId);
       await db.insert(journeyNodes).values({
         id: dbNode.id,
         journeyId: dbNode.journeyId,
@@ -176,8 +176,7 @@ export async function POST(request: Request) {
           // Insert nodes in bulk
           if (journey.nodes.length > 0) {
             const dbNodesToInsert = journey.nodes.map(
-              (node: ReactFlowNodeInput) =>
-                transformNodeToDB(node, journeyId, true)
+              (node: ReactFlowNodeInput) => transformNodeToDB(node, journeyId)
             );
             await db.insert(journeyNodes).values(dbNodesToInsert);
           }

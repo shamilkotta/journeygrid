@@ -1,19 +1,7 @@
-/**
- * Sync Service for local-first journey synchronization
- *
- * Handles bidirectional sync between IndexedDB (local) and PostgreSQL (server).
- * Uses server-priority merge strategy with debounced syncing.
- */
-
 import { type JourneyData, journeyApi } from "./api-client";
 import {
-  bulkUpsertFromServer,
-  deleteJourneysNotInList,
   getAllLocalJourneys,
-  getDirtyJourneys,
   getLocalJourney,
-  getUnsyncedJourneys,
-  type LocalJourney,
   markJourneySynced,
 } from "./local-db";
 
@@ -80,142 +68,6 @@ export function subscribeSyncStatus(
 // Get current sync status
 export function getSyncStatus(): SyncStatus {
   return currentSyncStatus;
-}
-
-/**
- * Convert server journey to local format
- */
-function serverToLocal(
-  server: JourneyData
-): Omit<LocalJourney, "isDirty" | "syncedAt"> {
-  return {
-    id: server.id,
-    name: server.name,
-    description: server.description || "",
-    nodes: server.nodes,
-    edges: server.edges,
-    journalId: server.journalId,
-    visibility: server.visibility,
-    createdAt: server.createdAt,
-    updatedAt: server.updatedAt,
-    userId: server.userId,
-    isOwner: true,
-  };
-}
-
-/**
- * Download all journeys from server and update local storage
- */
-export async function downloadFromServer(): Promise<number> {
-  try {
-    const serverJourneys = await journeyApi.getAll();
-
-    if (serverJourneys.length === 0) {
-      return 0;
-    }
-
-    // Convert to local format and bulk upsert
-    const localFormat = serverJourneys.map(serverToLocal);
-    await bulkUpsertFromServer(localFormat);
-
-    // Remove local journeys that were synced before but no longer exist on server
-    const serverIds = serverJourneys.map((r) => r.id);
-    await deleteJourneysNotInList(serverIds);
-
-    return serverJourneys.length;
-  } catch (error) {
-    console.error("[Sync] Failed to download from server:", error);
-    throw error;
-  }
-}
-
-/**
- * Upload new local journeys (never synced) to server
- */
-export async function uploadNewToServer(): Promise<number> {
-  try {
-    const unsyncedJourneys = await getUnsyncedJourneys();
-
-    if (unsyncedJourneys.length === 0) {
-      return 0;
-    }
-
-    let uploadCount = 0;
-
-    for (const journey of unsyncedJourneys) {
-      try {
-        // Create on server with same ID
-        await journeyApi.create({
-          id: journey.id,
-          name: journey.name,
-          description: journey.description,
-          nodes: journey.nodes,
-          edges: journey.edges,
-          journalId: journey.journalId,
-          visibility: journey.visibility,
-          createdAt: journey.createdAt,
-          updatedAt: journey.updatedAt,
-          userId: journey.userId,
-        });
-
-        // Mark as synced locally
-        await markJourneySynced(journey.id);
-        uploadCount += 1;
-      } catch (error) {
-        console.error(`[Sync] Failed to upload journey ${journey.id}:`, error);
-        // Continue with other journeys
-      }
-    }
-
-    return uploadCount;
-  } catch (error) {
-    console.error("[Sync] Failed to upload new journeys:", error);
-    throw error;
-  }
-}
-
-/**
- * Upload dirty journeys (already synced but have local changes) to server
- */
-export async function uploadDirtyToServer(): Promise<number> {
-  try {
-    const dirtyJourneys = await getDirtyJourneys();
-
-    // Filter to only those that have been synced before
-    const syncedDirtyJourneys = dirtyJourneys.filter((r) => r.syncedAt);
-
-    if (syncedDirtyJourneys.length === 0) {
-      return 0;
-    }
-
-    let uploadCount = 0;
-
-    for (const journey of syncedDirtyJourneys) {
-      try {
-        // Update on server
-        await journeyApi.update(journey.id, {
-          name: journey.name,
-          description: journey.description,
-          nodes: journey.nodes,
-          edges: journey.edges,
-          journalId: journey.journalId,
-          visibility: journey.visibility,
-        });
-
-        // Mark as synced locally
-        await markJourneySynced(journey.id);
-        uploadCount += 1;
-      } catch (error) {
-        console.error(`[Sync] Failed to update journey ${journey.id}:`, error);
-        // Continue with other journeys
-      }
-    }
-
-    return uploadCount;
-  } catch (error) {
-    console.error("[Sync] Failed to upload dirty journeys:", error);
-    throw error;
-  }
 }
 
 /**
@@ -293,6 +145,7 @@ export async function syncAll(): Promise<SyncResult> {
         description: r.description,
         nodes: r.nodes,
         edges: r.edges,
+        journalId: r.journalId,
         visibility: r.visibility,
         updatedAt: r.updatedAt,
         createdAt: r.createdAt,
@@ -316,7 +169,7 @@ export async function syncAll(): Promise<SyncResult> {
 /**
  * Debounced sync - call this after local saves when authenticated
  */
-export function debouncedSync(journeyId?: string): void {
+export function debouncedSync(journeyId: string): void {
   // Skip if not authenticated
   if (!isUserAuthenticated) {
     return;
@@ -341,14 +194,7 @@ export function debouncedSync(journeyId?: string): void {
     setSyncStatus("syncing");
 
     try {
-      if (journeyId) {
-        // Sync single journey
-        await syncJourney(journeyId);
-      } else {
-        // Sync all dirty journeys
-        await uploadDirtyToServer();
-        await uploadNewToServer();
-      }
+      await syncJourney(journeyId);
       setSyncStatus("synced");
     } catch (error) {
       console.error("[Sync] Debounced sync failed:", error);
@@ -370,7 +216,7 @@ export function cancelPendingSync(): void {
 /**
  * Force immediate sync (bypass debounce)
  */
-export async function forceSync(journeyId?: string): Promise<boolean> {
+export async function forceSync(journeyId: string): Promise<boolean> {
   cancelPendingSync();
 
   // Check if online
@@ -382,12 +228,7 @@ export async function forceSync(journeyId?: string): Promise<boolean> {
   setSyncStatus("syncing");
 
   try {
-    if (journeyId) {
-      await syncJourney(journeyId);
-    } else {
-      await uploadDirtyToServer();
-      await uploadNewToServer();
-    }
+    await syncJourney(journeyId);
     setSyncStatus("synced");
     return true;
   } catch (error) {

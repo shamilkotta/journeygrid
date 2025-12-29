@@ -194,7 +194,7 @@ export async function PATCH(
             .where(eq(journeyNodes.id, node.id));
         } else {
           // Insert new node
-          const dbNode = transformNodeToDB(node, journeyId, true);
+          const dbNode = transformNodeToDB(node, journeyId);
           await db.insert(journeyNodes).values({
             id: dbNode.id,
             journeyId: dbNode.journeyId,
