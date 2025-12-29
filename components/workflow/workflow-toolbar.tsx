@@ -102,129 +102,6 @@ type WorkflowToolbarProps = {
   workflowId?: string;
 };
 
-// Type for broken template reference info
-type BrokenTemplateReferenceInfo = {
-  nodeId: string;
-  nodeLabel: string;
-  brokenReferences: Array<{
-    fieldKey: string;
-    fieldLabel: string;
-    referencedNodeId: string;
-    displayText: string;
-  }>;
-};
-
-// Extract template variables from a string and check if they reference existing nodes
-function extractTemplateReferences(
-  value: unknown
-): Array<{ nodeId: string; displayText: string }> {
-  if (typeof value !== "string") {
-    return [];
-  }
-
-  const pattern = /\{\{@([^:]+):([^}]+)\}\}/g;
-  const matches = value.matchAll(pattern);
-
-  return Array.from(matches).map((match) => ({
-    nodeId: match[1],
-    displayText: match[2],
-  }));
-}
-
-// Recursively extract all template references from a config object
-function extractAllTemplateReferences(
-  config: Record<string, unknown>,
-  prefix = ""
-): Array<{ field: string; nodeId: string; displayText: string }> {
-  const results: Array<{ field: string; nodeId: string; displayText: string }> =
-    [];
-
-  for (const [key, value] of Object.entries(config)) {
-    const fieldPath = prefix ? `${prefix}.${key}` : key;
-
-    if (typeof value === "string") {
-      const refs = extractTemplateReferences(value);
-      for (const ref of refs) {
-        results.push({ field: fieldPath, ...ref });
-      }
-    } else if (
-      typeof value === "object" &&
-      value !== null &&
-      !Array.isArray(value)
-    ) {
-      results.push(
-        ...extractAllTemplateReferences(
-          value as Record<string, unknown>,
-          fieldPath
-        )
-      );
-    }
-  }
-
-  return results;
-}
-
-// Get broken template references for journey nodes (simplified - no config fields)
-function getBrokenTemplateReferences(
-  nodes: JourneyNode[]
-): BrokenTemplateReferenceInfo[] {
-  // Journeys don't use template references, return empty array
-  return [];
-}
-
-// Type for missing required fields info
-type MissingRequiredFieldInfo = {
-  nodeId: string;
-  nodeLabel: string;
-  missingFields: Array<{
-    fieldKey: string;
-    fieldLabel: string;
-  }>;
-};
-
-// Check if a field value is effectively empty
-function isFieldEmpty(value: unknown): boolean {
-  if (value === undefined || value === null) {
-    return true;
-  }
-  if (typeof value === "string" && value.trim() === "") {
-    return true;
-  }
-  return false;
-}
-
-// Check if a conditional field should be shown based on current config
-function shouldShowField(
-  field: { showWhen?: { field: string; equals: string } },
-  config: Record<string, unknown>
-): boolean {
-  if (!field.showWhen) {
-    return true;
-  }
-  return config[field.showWhen.field] === field.showWhen.equals;
-}
-
-// Get missing required fields for journey nodes (simplified - no required fields)
-function getMissingRequiredFields(
-  nodes: JourneyNode[]
-): MissingRequiredFieldInfo[] {
-  // Journeys don't have required fields, return empty array
-  return [];
-}
-
-// Removed - integration system removed
-function getMissingIntegrations(
-  nodes: JourneyNode[],
-  userIntegrations: Array<{ id: string; type: string }>
-): Array<{
-  integrationType: string;
-  integrationLabel: string;
-  nodeNames: string[];
-}> {
-  // No integrations needed for journeys
-  return [];
-}
-
 // Removed - execution system removed
 
 // Hook for journey handlers
@@ -838,8 +715,8 @@ function SyncStatusIndicator({
   };
 
   const handleClick = async () => {
-    if (status === "error" || status === "idle") {
-      await triggerForceSync();
+    if ((status === "error" || status === "idle") && currentJourneyId) {
+      await triggerForceSync(currentJourneyId);
     }
   };
 
