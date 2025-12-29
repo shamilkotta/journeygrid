@@ -47,7 +47,7 @@ export function createDefaultMilestoneNode(): ReactFlowNodeInput {
 export function transformNodeToDB(
   node: ReactFlowNodeInput,
   journeyId: string,
-  isNewNode: boolean = false
+  isNewNode = false
 ): {
   id: string;
   journeyId: string;

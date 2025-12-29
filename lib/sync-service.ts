@@ -94,6 +94,7 @@ function serverToLocal(
     description: server.description || "",
     nodes: server.nodes,
     edges: server.edges,
+    journalId: server.journalId,
     visibility: server.visibility,
     createdAt: server.createdAt,
     updatedAt: server.updatedAt,
@@ -150,6 +151,7 @@ export async function uploadNewToServer(): Promise<number> {
           description: journey.description,
           nodes: journey.nodes,
           edges: journey.edges,
+          journalId: journey.journalId,
           visibility: journey.visibility,
           createdAt: journey.createdAt,
           updatedAt: journey.updatedAt,
@@ -196,6 +198,7 @@ export async function uploadDirtyToServer(): Promise<number> {
           description: journey.description,
           nodes: journey.nodes,
           edges: journey.edges,
+          journalId: journey.journalId,
           visibility: journey.visibility,
         });
 
@@ -237,6 +240,7 @@ export async function syncJourney(id: string): Promise<boolean> {
       description: journey.description,
       nodes: journey.nodes,
       edges: journey.edges,
+      journalId: journey.journalId,
       visibility: journey.visibility,
       updatedAt: journey.updatedAt,
     });

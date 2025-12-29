@@ -34,6 +34,7 @@ export type LocalJourney = {
   description: string | null;
   nodes: JourneyNode[];
   edges: JourneyEdge[];
+  journalId: string | null;
   visibility: JourneyVisibility;
   createdAt: string;
   updatedAt: string;
@@ -88,6 +89,7 @@ export async function createLocalJourney(
     description: data.description || "",
     nodes: data.nodes || [],
     edges: data.edges || [],
+    journalId: data.journalId || null,
     visibility: data.visibility || "private",
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now,
