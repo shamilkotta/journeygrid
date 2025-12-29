@@ -1,27 +1,26 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { journeys } from "@/lib/db/schema";
+import { journals, journeyNodes, journeys } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
+import {
+  type NodeType,
+  transformNodeToReactFlow,
+} from "@/lib/utils/node-transforms";
 
 // Node type for type-safe node manipulation
 export type JourneyNodeLike = {
   id: string;
-  data?: {
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
+  title: string;
+  icon: string | null;
+  description: string | null;
+  type: string;
+  positionX: number;
+  positionY: number;
+  journalId: string | null;
 };
-
-// Helper to generate new IDs for nodes when duplicating
-export function duplicateNodes(nodes: JourneyNodeLike[]): JourneyNodeLike[] {
-  return nodes.map((node) => ({
-    ...node,
-    id: nanoid(),
-  }));
-}
 
 // Edge type for type-safe edge manipulation
 export type JourneyEdgeLike = {
@@ -31,18 +30,34 @@ export type JourneyEdgeLike = {
   [key: string]: unknown;
 };
 
+// Helper to generate new IDs for nodes when duplicating
+export function duplicateNodesWithIdMapping(
+  nodes: JourneyNodeLike[],
+  journalIdMap: Map<string, string>
+): {
+  newNodes: JourneyNodeLike[];
+  idMap: Map<string, string>;
+} {
+  const idMap = new Map<string, string>();
+  const newNodes = nodes.map((node) => {
+    const newId = nanoid();
+    idMap.set(node.id, newId);
+    return {
+      ...node,
+      id: newId,
+      journalId: node.journalId
+        ? journalIdMap.get(node.journalId) || null
+        : null,
+    };
+  });
+  return { newNodes, idMap };
+}
+
 // Helper to update edge references to new node IDs
 export function updateEdgeReferences(
   edges: JourneyEdgeLike[],
-  oldNodes: JourneyNodeLike[],
-  newNodes: JourneyNodeLike[]
+  idMap: Map<string, string>
 ): JourneyEdgeLike[] {
-  // Create mapping from old node IDs to new node IDs
-  const idMap = new Map<string, string>();
-  oldNodes.forEach((oldNode, index) => {
-    idMap.set(oldNode.id, newNodes[index].id);
-  });
-
   return edges.map((edge) => ({
     ...edge,
     id: nanoid(),
@@ -81,13 +96,62 @@ export async function POST(
       return NextResponse.json({ error: "Journey not found" }, { status: 404 });
     }
 
+    // Get source nodes from journeyNodes table
+    const sourceNodes = await db.query.journeyNodes.findMany({
+      where: eq(journeyNodes.journeyId, journeyId),
+    });
+
+    // Collect all unique journal IDs (journey-level + node-level)
+    const uniqueJournalIds = new Set<string>();
+    if (sourceJourney.journalId) {
+      uniqueJournalIds.add(sourceJourney.journalId);
+    }
+    for (const node of sourceNodes) {
+      if (node.journalId) {
+        uniqueJournalIds.add(node.journalId);
+      }
+    }
+
+    // Fetch all journals at once
+    const sourceJournals =
+      uniqueJournalIds.size > 0
+        ? await db.query.journals.findMany({
+            where: inArray(journals.id, Array.from(uniqueJournalIds)),
+          })
+        : [];
+
+    // Bulk insert all new journals
+    const journalIdMap = new Map<string, string>();
+    if (sourceJournals.length > 0) {
+      const newJournals = await db
+        .insert(journals)
+        .values(
+          sourceJournals.map((journal) => ({
+            userId: session.user.id,
+            content: journal.content,
+          }))
+        )
+        .returning();
+
+      // Build the map from old journal ID to new journal ID
+      for (let i = 0; i < sourceJournals.length; i++) {
+        journalIdMap.set(sourceJournals[i].id, newJournals[i].id);
+      }
+    }
+
+    // Get the new journey-level journal ID
+    const newJourneyJournalId = sourceJourney.journalId
+      ? journalIdMap.get(sourceJourney.journalId) || null
+      : null;
+
     // Generate new IDs for nodes
-    const oldNodes = sourceJourney.nodes as JourneyNodeLike[];
-    const newNodes = duplicateNodes(oldNodes);
+    const { newNodes, idMap } = duplicateNodesWithIdMapping(
+      sourceNodes as JourneyNodeLike[],
+      journalIdMap
+    );
     const newEdges = updateEdgeReferences(
       sourceJourney.edges as JourneyEdgeLike[],
-      oldNodes,
-      newNodes
+      idMap
     );
 
     // Generate a unique name
@@ -101,15 +165,38 @@ export async function POST(
         id: newJourneyId,
         name: baseName,
         description: sourceJourney.description,
-        nodes: newNodes,
         edges: newEdges,
+        journalId: newJourneyJournalId,
         userId: session.user.id,
         visibility: "private", // Duplicated journeys are always private
       })
       .returning();
 
+    // Insert duplicated nodes into journeyNodes table
+    // const insertedNodes: JourneyNodeLike[] = [];
+    const insertedNodes = await db
+      .insert(journeyNodes)
+      .values(
+        newNodes.map((node) => ({
+          ...node,
+          journeyId: newJourneyId,
+          type: node.type as NodeType,
+        }))
+      )
+      .returning();
+
+    // Transform nodes to ReactFlow format for response
+    const responseNodes = insertedNodes.map(transformNodeToReactFlow);
+
     return NextResponse.json({
-      ...newJourney,
+      id: newJourney.id,
+      name: newJourney.name,
+      description: newJourney.description,
+      userId: newJourney.userId,
+      edges: newJourney.edges,
+      journalId: newJourney.journalId,
+      visibility: newJourney.visibility,
+      nodes: responseNodes,
       createdAt: newJourney.createdAt.toISOString(),
       updatedAt: newJourney.updatedAt.toISOString(),
       isOwner: true,

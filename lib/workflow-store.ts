@@ -13,44 +13,12 @@ import { debouncedSync, deleteJourney } from "./sync-service";
 
 export type JourneyNodeType = "milestone" | "goal" | "task" | "add";
 
-export type Todo = {
-  id: string;
-  text: string;
-  completed: boolean;
-};
-
-export type Resource = {
-  id: string;
-  url: string;
-  title: string;
-};
-
-export type Note = {
-  id: string;
-  content: string;
-  createdAt: string;
-};
-
-export type Comment = {
-  id: string;
-  content: string;
-  userId: string;
-  createdAt: string;
-  replies?: Comment[];
-};
-
 export type JourneyNodeData = {
   label: string;
   description?: string;
   icon?: string; // Icon key (e.g., "target", "flag", "check-circle-2")
   type: JourneyNodeType;
-  todos?: Todo[];
-  resources?: Resource[];
-  notes?: Note[];
-  comments?: Comment[];
-  milestoneDate?: string;
-  deadline?: string;
-  startDate?: string;
+  journalId?: string; // Reference to journal for lazy loading
   onClick?: () => void; // For the "add" node type
 };
 
@@ -87,12 +55,6 @@ export const isTransitioningFromHomepageAtom = atom<boolean>(false);
 
 // Tracks the ID of a newly created node (for auto-focusing)
 export const newlyCreatedNodeIdAtom = atom<string | null>(null);
-
-// Journey-specific atoms for node data
-export const nodeTodosAtom = atom<Record<string, Todo[]>>({});
-export const nodeResourcesAtom = atom<Record<string, Resource[]>>({});
-export const nodeNotesAtom = atom<Record<string, Note[]>>({});
-export const nodeCommentsAtom = atom<Record<string, Comment[]>>({});
 
 // Autosave functionality - saves to local IndexedDB
 let autosaveTimeoutId: NodeJS.Timeout | null = null;
