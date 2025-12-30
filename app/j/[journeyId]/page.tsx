@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeys } from "@/lib/db/schema";
+import { transformNodeToReactFlow } from "@/lib/utils/node-transforms";
 import JourneyEditor from "./_components/JourneyEditor";
 
 type JourneyPageProps = {
@@ -29,24 +30,23 @@ const JourneyPage = async ({ params }: JourneyPageProps) => {
   let journey: any = await db.query.journeys.findFirst({
     where: or(...orCond),
     with: {
-      journal: true,
+      nodes: true,
     },
   });
 
   if (journey) {
+    // Transform nodes to ReactFlow format
+    const transformedNodes = journey.nodes
+      ? journey.nodes.map(transformNodeToReactFlow)
+      : [];
+
     journey = {
       ...journey,
       updatedAt: journey.updatedAt.toISOString(),
       createdAt: journey.createdAt.toISOString(),
       isOwner: journey.userId == session?.user.id,
-      journal: journey.journal
-        ? {
-            id: journey.journal.id,
-            content: journey.journal.content,
-            createdAt: journey.journal.createdAt.toISOString(),
-            updatedAt: journey.journal.updatedAt.toISOString(),
-          }
-        : null,
+      journalId: journey.journalId,
+      nodes: transformedNodes,
     };
   }
 

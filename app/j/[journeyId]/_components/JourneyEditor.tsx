@@ -254,7 +254,7 @@ const JourneyEditor = ({ journeyId, journey }: JourneyEditorProps) => {
     clearHistory();
 
     // Clear selection when loading
-    const nodesWithoutSelection = localJourney.nodes.map(
+    const nodesWithoutSelection = localJourney.nodes?.map(
       (node: JourneyNode) => ({
         ...node,
         selected: false,

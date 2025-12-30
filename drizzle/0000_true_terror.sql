@@ -14,17 +14,24 @@ CREATE TABLE "accounts" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "journals" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"content" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "journey_nodes" (
 	"id" text PRIMARY KEY NOT NULL,
-	"node_id" text NOT NULL,
 	"journey_id" text NOT NULL,
-	"todos" jsonb,
-	"resources" jsonb,
-	"notes" jsonb,
-	"comments" jsonb,
-	"milestone_date" timestamp,
-	"deadline" timestamp,
-	"start_date" timestamp,
+	"title" text NOT NULL,
+	"icon" text,
+	"description" text,
+	"type" text NOT NULL,
+	"position_x" real NOT NULL,
+	"position_y" real NOT NULL,
+	"journal_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -34,8 +41,8 @@ CREATE TABLE "journeys" (
 	"name" text NOT NULL,
 	"description" text,
 	"user_id" text NOT NULL,
-	"nodes" jsonb NOT NULL,
 	"edges" jsonb NOT NULL,
+	"journal_id" text,
 	"visibility" text DEFAULT 'private' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -75,6 +82,9 @@ CREATE TABLE "verifications" (
 );
 --> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "journey_nodes" ADD CONSTRAINT "journey_nodes_journey_id_journeys_id_fk" FOREIGN KEY ("journey_id") REFERENCES "public"."journeys"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "journals" ADD CONSTRAINT "journals_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "journey_nodes" ADD CONSTRAINT "journey_nodes_journey_id_journeys_id_fk" FOREIGN KEY ("journey_id") REFERENCES "public"."journeys"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "journey_nodes" ADD CONSTRAINT "journey_nodes_journal_id_journals_id_fk" FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "journeys" ADD CONSTRAINT "journeys_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "journeys" ADD CONSTRAINT "journeys_journal_id_journals_id_fk" FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

@@ -1,5 +1,5 @@
 {
-  "id": "8dec3ac1-74f0-41b0-a48f-cd39f2aa9b5d",
+  "id": "e3e6458c-6e4b-458d-b725-de89abdbea96",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -105,6 +105,61 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.journals": {
+      "name": "journals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "journals_user_id_users_id_fk": {
+          "name": "journals_user_id_users_id_fk",
+          "tableFrom": "journals",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.journey_nodes": {
       "name": "journey_nodes",
       "schema": "",
@@ -115,57 +170,51 @@
           "primaryKey": true,
           "notNull": true
         },
-        "node_id": {
-          "name": "node_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "journey_id": {
           "name": "journey_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "todos": {
-          "name": "todos",
-          "type": "jsonb",
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "icon": {
+          "name": "icon",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "resources": {
-          "name": "resources",
-          "type": "jsonb",
+        "description": {
+          "name": "description",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "notes": {
-          "name": "notes",
-          "type": "jsonb",
+        "type": {
+          "name": "type",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "comments": {
-          "name": "comments",
-          "type": "jsonb",
+        "position_x": {
+          "name": "position_x",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "milestone_date": {
-          "name": "milestone_date",
-          "type": "timestamp",
+        "position_y": {
+          "name": "position_y",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "deadline": {
-          "name": "deadline",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "start_date": {
-          "name": "start_date",
-          "type": "timestamp",
+        "journal_id": {
+          "name": "journal_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -191,6 +240,15 @@
           "tableFrom": "journey_nodes",
           "tableTo": "journeys",
           "columnsFrom": ["journey_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "journey_nodes_journal_id_journals_id_fk": {
+          "name": "journey_nodes_journal_id_journals_id_fk",
+          "tableFrom": "journey_nodes",
+          "tableTo": "journals",
+          "columnsFrom": ["journal_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -230,17 +288,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "nodes": {
-          "name": "nodes",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
         "edges": {
           "name": "edges",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true
+        },
+        "journal_id": {
+          "name": "journal_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "visibility": {
           "name": "visibility",
@@ -271,6 +329,15 @@
           "tableFrom": "journeys",
           "tableTo": "users",
           "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "journeys_journal_id_journals_id_fk": {
+          "name": "journeys_journal_id_journals_id_fk",
+          "tableFrom": "journeys",
+          "tableTo": "journals",
+          "columnsFrom": ["journal_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
