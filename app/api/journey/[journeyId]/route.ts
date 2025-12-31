@@ -189,7 +189,7 @@ export async function PATCH(
               positionX: dbNode.positionX,
               positionY: dbNode.positionY,
               journalId: dbNode.journalId,
-              updatedAt: new Date(),
+              updatedAt: updatedJourney.updatedAt,
             })
             .where(eq(journeyNodes.id, node.id));
         } else {
