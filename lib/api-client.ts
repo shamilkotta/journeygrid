@@ -342,6 +342,44 @@ export const userApi = {
     }),
 };
 
+// Journal API
+export const journalApi = {
+  // Get a journal by ID
+  getById: (journalId: string) =>
+    apiCall<JournalData>(`/api/journal/${journalId}`),
+
+  // Update a journal
+  update: (journalId: string, content: string | null) =>
+    apiCall<JournalData>(`/api/journal/${journalId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content }),
+    }),
+
+  // Delete a journal
+  delete: (journalId: string) =>
+    apiCall<{ success: boolean }>(`/api/journal/${journalId}`, {
+      method: "DELETE",
+    }),
+
+  // Bulk sync journals (for authentication/initial sync only)
+  sync: (
+    journals: Array<{
+      id: string;
+      content: string | null;
+      userId: string;
+      createdAt?: string;
+      updatedAt?: string;
+    }>
+  ) =>
+    apiCall<{
+      journals: JournalData[];
+      errors: Array<{ id: string; error: string }>;
+    }>("/api/journal/sync", {
+      method: "POST",
+      body: JSON.stringify({ journals }),
+    }),
+};
+
 // Journey API
 export const journeyApi = {
   // Get all journeys

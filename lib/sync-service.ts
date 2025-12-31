@@ -1,7 +1,11 @@
-import { type JourneyData, journeyApi } from "./api-client";
+import { type JourneyData, journalApi, journeyApi } from "./api-client";
 import {
+  getAllLocalJournals,
   getAllLocalJourneys,
+  getLocalJournal,
   getLocalJourney,
+  type LocalJournal,
+  markJournalSynced,
   markJourneySynced,
 } from "./local-db";
 
@@ -15,6 +19,7 @@ export type SyncResult = {
 
 // Debounce timer for sync operations
 let syncDebounceTimer: NodeJS.Timeout | null = null;
+let journalSyncDebounceTimer: NodeJS.Timeout | null = null;
 const SYNC_DEBOUNCE_MS = 5000; // 5 seconds
 let idleTimeout: NodeJS.Timeout | null = null;
 const IDLE_TIMEOUT_MS = 60_000; // 1 minute
@@ -82,9 +87,9 @@ export async function syncJourney(id: string): Promise<boolean> {
     }
 
     // // Skip if not dirty
-    // if (!journey.isDirty) {
-    //   return true;
-    // }
+    if (!journey.isDirty) {
+      return true;
+    }
 
     await journeyApi.update(id, {
       userId: journey.userId,
@@ -116,6 +121,84 @@ export async function deleteJourney(id: string): Promise<boolean> {
   }
 }
 
+// ============================================
+// Journal Sync Functions
+// ============================================
+
+/**
+ * Sync a single journal to server using journalApi.update()
+ */
+export async function syncJournal(id: string): Promise<boolean> {
+  try {
+    const journal = await getLocalJournal(id);
+
+    if (!journal) {
+      return false;
+    }
+
+    // Skip if not dirty
+    if (!journal.isDirty) {
+      return true;
+    }
+
+    await journalApi.update(id, journal.content);
+
+    // Mark as synced
+    await markJournalSynced(id);
+    return true;
+  } catch (error) {
+    console.error(`[Sync] Failed to sync journal ${id}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Debounced sync for journal changes
+ */
+export function debouncedJournalSync(journalId: string): void {
+  // Skip if not authenticated
+  if (!isUserAuthenticated) {
+    return;
+  }
+
+  if (journalSyncDebounceTimer) {
+    clearTimeout(journalSyncDebounceTimer);
+  }
+
+  journalSyncDebounceTimer = setTimeout(async () => {
+    // Double-check authentication (might have changed during debounce)
+    if (!isUserAuthenticated) {
+      return;
+    }
+
+    // Check if online
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setSyncStatus("offline");
+      return;
+    }
+
+    setSyncStatus("syncing");
+
+    try {
+      await syncJournal(journalId);
+      setSyncStatus("synced");
+    } catch (error) {
+      console.error("[Sync] Debounced journal sync failed:", error);
+      setSyncStatus("error");
+    }
+  }, SYNC_DEBOUNCE_MS);
+}
+
+/**
+ * Cancel pending debounced journal sync
+ */
+export function cancelPendingJournalSync(): void {
+  if (journalSyncDebounceTimer) {
+    clearTimeout(journalSyncDebounceTimer);
+    journalSyncDebounceTimer = null;
+  }
+}
+
 /**
  * Full sync on login - download server data, upload new local data
  */
@@ -138,23 +221,59 @@ export async function syncAll(): Promise<SyncResult> {
   try {
     // sync local journeys
     const localJourneys = await getAllLocalJourneys();
-    const syncResult = await journeyApi.sync(
-      localJourneys.map((r) => ({
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        nodes: r.nodes,
-        edges: r.edges,
-        journalId: r.journalId,
-        visibility: r.visibility,
-        updatedAt: r.updatedAt,
-        createdAt: r.createdAt,
-        userId: r.userId,
-      }))
-    );
+    const localJournals = await getAllLocalJournals();
+    const [journeySyncResult, journalSyncResult] = await Promise.allSettled([
+      journeyApi.sync(
+        localJourneys.map((r) => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          nodes: r.nodes,
+          edges: r.edges,
+          journalId: r.journalId,
+          visibility: r.visibility,
+          updatedAt: r.updatedAt,
+          createdAt: r.createdAt,
+          userId: r.userId,
+        }))
+      ),
+      journalApi.sync(
+        localJournals.map((j: LocalJournal) => ({
+          id: j.id,
+          content: j.content,
+          userId: j.userId,
+          createdAt: j.createdAt,
+          updatedAt: j.updatedAt,
+        }))
+      ),
+    ]);
+
+    if (journeySyncResult.status === "fulfilled") {
+      for (const journey of journeySyncResult.value.journeys) {
+        await markJourneySynced(journey.id);
+      }
+      result.journeys = journeySyncResult.value.journeys;
+      result.errors.push(...journeySyncResult.value.errors.map((e) => e.error));
+    } else {
+      result.errors.push(
+        "[Sync] Failed to sync journeys: " +
+          (journeySyncResult.reason?.message || "Unknown error")
+      );
+    }
+
+    if (journalSyncResult.status === "fulfilled") {
+      for (const journal of journalSyncResult.value.journals) {
+        await markJournalSynced(journal.id);
+      }
+      result.errors.push(...journalSyncResult.value.errors.map((e) => e.error));
+    } else {
+      result.errors.push(
+        "[Sync] Failed to sync journals: " +
+          (journalSyncResult.reason?.message || "Unknown error")
+      );
+    }
 
     result.success = true;
-    result.journeys = syncResult.journeys;
     setSyncStatus("synced");
   } catch (error) {
     const errorMessage =

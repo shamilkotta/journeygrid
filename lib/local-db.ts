@@ -33,12 +33,14 @@ interface JourneyDBSchema extends DBSchema {
 
 type JourneyVisibility = "private" | "public";
 
-type LocalJournal = {
+export type LocalJournal = {
   id: string;
   userId: string;
-  content: string;
+  content: string | null;
   createdAt: string;
   updatedAt: string;
+  isDirty?: boolean;
+  syncedAt?: string;
 };
 
 // Local journey type
@@ -59,7 +61,7 @@ export type LocalJourney = {
 };
 
 const DB_NAME = "journey-builder";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbInstance: IDBPDatabase<JourneyDBSchema> | null = null;
 
@@ -78,6 +80,14 @@ async function getDB(): Promise<IDBPDatabase<JourneyDBSchema>> {
         });
         journeyStore.createIndex("by-updated", "updatedAt");
         journeyStore.createIndex("by-name", "name");
+      }
+
+      // Create journals store
+      if (!db.objectStoreNames.contains("journals")) {
+        const journalStore = db.createObjectStore("journals", {
+          keyPath: "id",
+        });
+        journalStore.createIndex("by-updated", "updatedAt");
       }
 
       // Create settings store for app preferences
@@ -112,7 +122,7 @@ export async function createLocalJourney(
     isDirty: true,
   };
 
-  await db.put("journeys", journey);
+  await db.put("journeys", journey, journey.id);
   return journey;
 }
 
@@ -152,7 +162,7 @@ export async function updateLocalJourney(
     isDirty: true,
   };
 
-  await db.put("journeys", updated);
+  await db.put("journeys", updated, id);
   return updated;
 }
 
@@ -251,11 +261,113 @@ export async function markJourneySynced(id: string): Promise<void> {
     syncedAt: new Date().toISOString(),
   };
 
-  await db.put("journeys", updated);
+  await db.put("journeys", updated, id);
 }
 
 // Get all local journey IDs
 export async function getAllLocalJourneyIds(): Promise<string[]> {
   const db = await getDB();
   return db.getAllKeys("journeys");
+}
+
+// ============================================
+// Journal CRUD Functions
+// ============================================
+
+// Create or update a journal (upsert)
+export async function createLocalJournal(
+  data: LocalJournal
+): Promise<LocalJournal> {
+  const db = await getDB();
+  const now = new Date().toISOString();
+
+  const journal: LocalJournal = {
+    id: data.id || nanoid(),
+    userId: data.userId,
+    content: data.content ?? null,
+    createdAt: data.createdAt || now,
+    updatedAt: data.updatedAt || now,
+    isDirty: data.isDirty ?? true,
+    syncedAt: data.syncedAt,
+  };
+
+  await db.put("journals", journal, journal.id);
+  return journal;
+}
+
+// Get a journal by ID
+export async function getLocalJournal(
+  id: string
+): Promise<LocalJournal | undefined> {
+  const db = await getDB();
+  return db.get("journals", id);
+}
+
+// Get all journals
+export async function getAllLocalJournals(): Promise<LocalJournal[]> {
+  const db = await getDB();
+  const journals = await db.getAllFromIndex("journals", "by-updated");
+  return journals.reverse();
+}
+
+// Update a journal
+export async function updateLocalJournal(
+  id: string,
+  data: Partial<LocalJournal>
+): Promise<LocalJournal | undefined> {
+  const db = await getDB();
+  const existing = await db.get("journals", id);
+
+  if (!existing) {
+    return;
+  }
+
+  const updated: LocalJournal = {
+    ...existing,
+    ...data,
+    id,
+    updatedAt: new Date().toISOString(),
+    isDirty: data.isDirty ?? true,
+  };
+
+  await db.put("journals", updated, id);
+  return updated;
+}
+
+// Delete a journal
+export async function deleteLocalJournal(id: string): Promise<boolean> {
+  const db = await getDB();
+  const existing = await db.get("journals", id);
+
+  if (!existing) {
+    return false;
+  }
+
+  await db.delete("journals", id);
+  return true;
+}
+
+// Get all journals that have unsynced local changes
+export async function getDirtyJournals(): Promise<LocalJournal[]> {
+  const db = await getDB();
+  const allJournals = await db.getAll("journals");
+  return allJournals.filter((j) => j.isDirty === true);
+}
+
+// Mark a journal as synced (clear dirty flag, set syncedAt)
+export async function markJournalSynced(id: string): Promise<void> {
+  const db = await getDB();
+  const existing = await db.get("journals", id);
+
+  if (!existing) {
+    return;
+  }
+
+  const updated: LocalJournal = {
+    ...existing,
+    isDirty: false,
+    syncedAt: new Date().toISOString(),
+  };
+
+  await db.put("journals", updated, id);
 }
