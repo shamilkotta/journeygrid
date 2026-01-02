@@ -118,11 +118,11 @@ export async function createLocalJourney(
     visibility: data.visibility || "private",
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now,
-    isOwner: true,
+    isOwner: data.isOwner ?? true,
     isDirty: true,
   };
 
-  await db.put("journeys", journey, journey.id);
+  await db.put("journeys", journey);
   return journey;
 }
 
@@ -162,7 +162,7 @@ export async function updateLocalJourney(
     isDirty: true,
   };
 
-  await db.put("journeys", updated, id);
+  await db.put("journeys", updated);
   return updated;
 }
 
@@ -261,7 +261,7 @@ export async function markJourneySynced(id: string): Promise<void> {
     syncedAt: new Date().toISOString(),
   };
 
-  await db.put("journeys", updated, id);
+  await db.put("journeys", updated);
 }
 
 // Get all local journey IDs
@@ -291,7 +291,7 @@ export async function createLocalJournal(
     syncedAt: data.syncedAt,
   };
 
-  await db.put("journals", journal, journal.id);
+  await db.put("journals", journal);
   return journal;
 }
 
@@ -330,7 +330,7 @@ export async function updateLocalJournal(
     isDirty: data.isDirty ?? true,
   };
 
-  await db.put("journals", updated, id);
+  await db.put("journals", updated);
   return updated;
 }
 
@@ -369,5 +369,5 @@ export async function markJournalSynced(id: string): Promise<void> {
     syncedAt: new Date().toISOString(),
   };
 
-  await db.put("journals", updated, id);
+  await db.put("journals", updated);
 }
