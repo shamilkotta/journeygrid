@@ -101,6 +101,7 @@ export const updateCurrentJourneyAtom = atom(
       return;
     }
     set(currentJourneyAtom, { ...currentJourney, ...journey });
+    set(hasUnsavedChangesAtom, true);
     await set(autosaveAtom, options);
   }
 );
@@ -213,6 +214,7 @@ export const onNodesChangeAtom = atom(
       (change) => change.type === "position" && change.dragging === false
     );
     if (hadPositionChanges) {
+      set(hasUnsavedChangesAtom, true);
       set(autosaveAtom); // Debounced save
     }
 
@@ -221,6 +223,7 @@ export const onNodesChangeAtom = atom(
       (change) => change.type === "dimensions"
     );
     if (hadDimensionChanges) {
+      set(hasUnsavedChangesAtom, true);
       set(autosaveAtom);
     }
   }
@@ -251,7 +254,8 @@ export const onEdgesChangeAtom = atom(
     // Check if there were any deletions to trigger immediate save
     const hadDeletions = changes.some((change) => change.type === "remove");
     if (hadDeletions) {
-      set(autosaveAtom, { immediate: true });
+      set(hasUnsavedChangesAtom, true);
+      set(autosaveAtom, { immediate: hadDeletions });
     }
   }
 );
