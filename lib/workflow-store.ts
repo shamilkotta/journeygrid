@@ -3,13 +3,20 @@ import { applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { atom } from "jotai";
 import { atomFamily } from "jotai-family";
 import {
+  createLocalJournal,
   createLocalJourney,
   deleteLocalJourney,
+  getLocalJournal,
   getLocalJourney,
   type LocalJourney,
+  updateLocalJournal,
   updateLocalJourney,
 } from "./local-db";
-import { debouncedSync, deleteJourney } from "./sync-service";
+import {
+  debouncedJournalSync,
+  debouncedSync,
+  deleteJourney,
+} from "./sync-service";
 
 export type JourneyNodeType = "milestone" | "goal" | "task" | "add";
 
@@ -43,6 +50,63 @@ export const currentJourneyIdAtom = atom((get) => get(currentJourneyAtom)?.id);
 // export const currentJourneyNameAtom = atom<string>("");
 // export const currentJourneyVisibilityAtom = atom<JourneyVisibility>("private");
 // export const isJourneyOwnerAtom = atom<boolean>(true);
+
+// Journal atoms
+export const journalContentAtom = atom<string>("");
+export const journalLoadingAtom = atom<boolean>(false);
+let autosaveJournalTimeoutId: NodeJS.Timeout | null = null;
+
+// Atom to update journal content
+export const updateJournalAtom = atom(
+  null,
+  async (get, set, content: string, options?: { immediate?: boolean }) => {
+    const journalId = get(currentJournalIdAtom);
+    const currentJourney = get(currentJourneyAtom);
+
+    if (!(journalId && currentJourney?.userId)) return;
+
+    set(journalContentAtom, content);
+    set(hasUnsavedChangesAtom, true);
+    set(autosaveJournalAtom, options);
+  }
+);
+
+export const autosaveJournalAtom = atom(
+  null,
+  async (get, set, options?: { immediate?: boolean }) => {
+    const journal = get(journalContentAtom);
+    const journalId = get(currentJournalIdAtom);
+
+    if (!journalId) {
+      return;
+    }
+
+    const saveFunc = async () => {
+      try {
+        // Save to local IndexedDB
+        await updateLocalJournal(journalId, {
+          content: journal,
+          isDirty: true,
+        });
+        set(hasUnsavedChangesAtom, false);
+        debouncedJournalSync(journalId);
+      } catch (error) {
+        console.error("Local autosave failed:", error);
+      }
+    };
+
+    if (options?.immediate) {
+      // Save immediately (for add/delete/connect operations)
+      await saveFunc();
+    } else {
+      // Debounce for typing operations
+      if (autosaveJournalTimeoutId) {
+        clearTimeout(autosaveJournalTimeoutId);
+      }
+      autosaveJournalTimeoutId = setTimeout(saveFunc, AUTOSAVE_DELAY);
+    }
+  }
+);
 
 // UI state atoms
 export const propertiesPanelActiveTabAtom = atom<string>("properties");
