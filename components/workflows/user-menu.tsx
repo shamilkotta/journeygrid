@@ -4,7 +4,7 @@ import { LogOut, Moon, Settings, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SettingsDialog } from "@/components/settings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { api } from "@/lib/api-client";
 import { signOut, useSession } from "@/lib/auth-client";
 import { clearAllData } from "@/lib/local-db";
 import { cancelPendingSync } from "@/lib/sync-service";
@@ -31,18 +30,7 @@ export const UserMenu = () => {
   const { data: session, isPending } = useSession();
   const { theme, setTheme } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [providerId, setProviderId] = useState<string | null>(null);
   const pathname = usePathname();
-
-  // Fetch provider info when session is available
-  useEffect(() => {
-    if (session?.user && !session.user.name?.startsWith("Anonymous")) {
-      api.user
-        .get()
-        .then((user) => setProviderId(user.providerId))
-        .catch(() => setProviderId(null));
-    }
-  }, [session?.user]);
 
   const handleLogout = async () => {
     // Cancel any pending syncs
@@ -58,12 +46,6 @@ export const UserMenu = () => {
       },
     });
   };
-
-  // OAuth users can't edit their profile
-  const isOAuthUser =
-    providerId === "vercel" ||
-    providerId === "github" ||
-    providerId === "google";
 
   const getUserInitials = () => {
     if (session?.user?.name) {
@@ -163,12 +145,10 @@ export const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {!isOAuthUser && (
-          <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-            <Settings className="size-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+          <Settings className="size-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
