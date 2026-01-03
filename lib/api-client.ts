@@ -390,7 +390,7 @@ export const journeyApi = {
 
   // Create a new journey (id is optional - if provided, uses that ID)
   create: (journey: JourneyData) =>
-    apiCall<JourneyData>("/api/journey/create", {
+    apiCall<JourneyData>("/api/journey", {
       method: "POST",
       body: JSON.stringify(journey),
     }),
