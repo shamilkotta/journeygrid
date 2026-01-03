@@ -882,12 +882,14 @@ function WorkflowMenuComponent({
                   <DropdownMenuItem
                     className="flex items-center justify-between"
                     key={journey.id}
-                    onClick={() => state.router.push(`/j/${journey.id}`)}
+                    asChild
                   >
-                    <span className="truncate">{journey.name}</span>
-                    {journey.id === state.currentJourneyId && (
-                      <Check className="size-4 shrink-0" />
-                    )}
+                    <Link href={`/j/${journey.id}`} prefetch>
+                      <span className="truncate">{journey.name}</span>
+                      {journey.id === state.currentJourneyId && (
+                        <Check className="size-4 shrink-0" />
+                      )}
+                    </Link>
                   </DropdownMenuItem>
                 ))
             )}

@@ -360,9 +360,14 @@ export const updateNodeDataAtom = atom(
 
     // Check if label is being updated
     const oldNode = currentNodes.find((node) => node.id === id);
-    const oldLabel = oldNode?.data.label;
-    const newLabel = data.label;
-    const isLabelChange = newLabel !== undefined && oldLabel !== newLabel;
+    const isLabelChange = data.label && oldNode?.data.label !== data.label;
+    const isDescriptionChange =
+      data.description && oldNode?.data.description !== data.description;
+    const isIconChange = data.icon && oldNode?.data.icon !== data.icon;
+
+    if (!isLabelChange && !isDescriptionChange && !isIconChange) {
+      return;
+    }
 
     const newNodes = currentNodes.map((node) => {
       if (node.id === id) {

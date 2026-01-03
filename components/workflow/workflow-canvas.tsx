@@ -530,12 +530,6 @@ export function WorkflowCanvas() {
     [setSelectedNode]
   );
 
-  // Check if user is anonymous or not signed in
-  const isAnonymous =
-    !session?.user ||
-    session.user.name === "Anonymous" ||
-    session.user.email?.startsWith("temp-");
-
   return (
     <div
       className="relative h-full bg-background"
