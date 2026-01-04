@@ -264,6 +264,16 @@ export async function markJourneySynced(id: string): Promise<void> {
   await db.put("journeys", updated);
 }
 
+export async function markJourneyUnsynced(id: string): Promise<void> {
+  const db = await getDB();
+  const existing = await db.get("journeys", id);
+  if (!existing) {
+    return;
+  }
+  const updated: LocalJourney = { ...existing, isDirty: true };
+  await db.put("journeys", updated);
+}
+
 // Get all local journey IDs
 export async function getAllLocalJourneyIds(): Promise<string[]> {
   const db = await getDB();
@@ -369,5 +379,15 @@ export async function markJournalSynced(id: string): Promise<void> {
     syncedAt: new Date().toISOString(),
   };
 
+  await db.put("journals", updated);
+}
+
+export async function markJournalUnsynced(id: string): Promise<void> {
+  const db = await getDB();
+  const existing = await db.get("journals", id);
+  if (!existing) {
+    return;
+  }
+  const updated: LocalJournal = { ...existing, isDirty: true };
   await db.put("journals", updated);
 }

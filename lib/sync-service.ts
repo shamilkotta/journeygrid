@@ -7,6 +7,8 @@ import {
   type LocalJournal,
   markJournalSynced,
   markJourneySynced,
+  markJourneyUnsynced,
+  markJournalUnsynced,
 } from "./local-db";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";
@@ -90,6 +92,8 @@ export async function syncJourney(id: string): Promise<boolean> {
     if (!journey.isDirty) {
       return true;
     }
+    // Mark as synced
+    await markJourneySynced(id);
 
     await journeyApi.update(id, {
       userId: journey.userId,
@@ -101,12 +105,10 @@ export async function syncJourney(id: string): Promise<boolean> {
       visibility: journey.visibility,
       updatedAt: journey.updatedAt,
     });
-
-    // Mark as synced
-    await markJourneySynced(id);
     return true;
   } catch (error) {
     console.error(`[Sync] Failed to sync journey ${id}:`, error);
+    await markJourneyUnsynced(id);
     return false;
   }
 }
@@ -141,13 +143,15 @@ export async function syncJournal(id: string): Promise<boolean> {
       return true;
     }
 
-    await journalApi.update(id, journal.content);
-
     // Mark as synced
     await markJournalSynced(id);
+
+    await journalApi.update(id, journal.content);
+
     return true;
   } catch (error) {
     console.error(`[Sync] Failed to sync journal ${id}:`, error);
+    await markJournalUnsynced(id);
     return false;
   }
 }

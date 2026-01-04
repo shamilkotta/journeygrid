@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { MenuIcon, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -22,13 +22,18 @@ import { NotionTitleEditor } from "@/components/ui/notion-title-editor";
 import { defaultNodeIcons } from "@/lib/utils/icon-mapper";
 import {
   allJourneysAtom,
+  createJournalAtom,
+  currentJournalIdAtom,
   currentJourneyAtom,
   currentJourneyIdAtom,
   deleteEdgeAtom,
   deleteNodeAtom,
   deleteSelectedItemsAtom,
   edgesAtom,
+  fetchJournalAtom,
   isGeneratingAtom,
+  journalContentAtom,
+  journalLoadingAtom,
   nodesAtom,
   propertiesPanelActiveTabAtom,
   selectedEdgeAtom,
@@ -36,6 +41,7 @@ import {
   showClearDialogAtom,
   showDeleteDialogAtom,
   updateCurrentJourneyAtom,
+  updateJournalAtom,
   updateNodeDataAtom,
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
@@ -136,13 +142,44 @@ export const PanelInner = () => {
   const [showDeleteNodeAlert, setShowDeleteNodeAlert] = useState(false);
   const [showDeleteEdgeAlert, setShowDeleteEdgeAlert] = useState(false);
   const [activeTab, setActiveTab] = useAtom(propertiesPanelActiveTabAtom);
+  const journalContent = useAtomValue(journalContentAtom);
+  const isLoadingJournal = useAtomValue(journalLoadingAtom);
+  const currentJournalId = useAtomValue(currentJournalIdAtom);
+  const createJournal = useSetAtom(createJournalAtom);
+  const fetchJournal = useSetAtom(fetchJournalAtom);
+  const updateJournal = useSetAtom(updateJournalAtom);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId);
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId);
+  const isCreatingJournal = useRef(false);
+
+  // Fetch journal when journalId changes (node or journey)
+  useEffect(() => {
+    fetchJournal();
+  }, [fetchJournal, currentJournalId]);
 
   // Count multiple selections
   const selectedNodes = nodes.filter((node) => node.selected);
   const selectedEdges = edges.filter((edge) => edge.selected);
   const hasMultipleSelections = selectedNodes.length + selectedEdges.length > 1;
+
+  const handleUpdateJournal = async (content: string) => {
+    if (currentJournalId) {
+      updateJournal(content);
+    } else if (!isCreatingJournal.current) {
+      try {
+        isCreatingJournal.current = true;
+        await createJournal(
+          content,
+          currentJourneyId!,
+          selectedNodeId ?? undefined
+        );
+      } catch (error) {
+        console.error("Failed to create journal:", error);
+      } finally {
+        isCreatingJournal.current = false;
+      }
+    }
+  };
 
   const handleDelete = () => {
     if (selectedNodeId) {
@@ -311,6 +348,23 @@ export const PanelInner = () => {
                   value={currentJourneyId || "Not saved"}
                 />
               </div>
+              <div className="mt-6 space-y-2">
+                <Label className="mb-3 block text-muted-foreground text-xs">
+                  Journey Journal
+                </Label>
+                {isLoadingJournal ? (
+                  <div className="flex h-32 items-center justify-center">
+                    <p className="text-muted-foreground text-sm">Loading...</p>
+                  </div>
+                ) : (
+                  <BlockEditor
+                    disabled={!isOwner}
+                    onChange={handleUpdateJournal}
+                    placeholder="Write about your journey..."
+                    value={journalContent}
+                  />
+                )}
+              </div>
               {!isOwner && (
                 <div className="rounded-lg border border-muted bg-muted/30 p-3">
                   <p className="text-muted-foreground text-sm">
@@ -397,12 +451,18 @@ export const PanelInner = () => {
               <Label className="mb-3 block text-muted-foreground text-xs">
                 Journal your journey
               </Label>
-              <BlockEditor
-                disabled={isGenerating || !isOwner}
-                onChange={() => {}}
-                placeholder="Start writing or type '/' for commands..."
-                value=""
-              />
+              {isLoadingJournal ? (
+                <div className="flex h-32 items-center justify-center">
+                  <p className="text-muted-foreground text-sm">Loading...</p>
+                </div>
+              ) : (
+                <BlockEditor
+                  disabled={isGenerating || !isOwner}
+                  onChange={handleUpdateJournal}
+                  placeholder="Start writing or type '/' for commands..."
+                  value={journalContent}
+                />
+              )}
             </div>
 
             {!isOwner && (

@@ -2,6 +2,7 @@ import type { Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { atom } from "jotai";
 import { atomFamily } from "jotai-family";
+import { api } from "./api-client";
 import {
   createLocalJournal,
   createLocalJourney,
@@ -56,14 +57,108 @@ export const journalContentAtom = atom<string>("");
 export const journalLoadingAtom = atom<boolean>(false);
 let autosaveJournalTimeoutId: NodeJS.Timeout | null = null;
 
+// Derived atom: Get the current journal ID based on selection
+export const currentJournalIdAtom = atom((get) => {
+  const selectedNodeId = get(selectedNodeAtom);
+  const nodes = get(nodesAtom);
+  const currentJourney = get(currentJourneyAtom);
+
+  if (selectedNodeId) {
+    // Node is selected - return node's journalId
+    const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+    return selectedNode?.data.journalId || null;
+  }
+  // No node selected - return journey's journalId
+  return currentJourney?.journalId || null;
+});
+
+export const createJournalAtom = atom(
+  null,
+  async (get, set, content: string, journeyId: string, nodeId?: string) => {
+    const journal = await api.journal.create(content, journeyId);
+    const currentJourney = get(currentJourneyAtom);
+    if (!currentJourney) return;
+    if (nodeId) {
+      const nodes = get(nodesAtom);
+      const newNodes = nodes.map((n) => {
+        if (n.id === nodeId) {
+          return { ...n, data: { ...n.data, journalId: journal.id } };
+        }
+        return n;
+      });
+      set(nodesAtom, newNodes);
+    } else {
+      const newJourney = {
+        ...currentJourney,
+        journalId: journal.id,
+      };
+      set(currentJourneyAtom, newJourney);
+    }
+    await createLocalJournal({
+      id: journal.id,
+      userId: currentJourney.userId,
+      content: journal.content,
+      createdAt: journal.createdAt,
+      updatedAt: journal.updatedAt,
+      isDirty: false,
+    });
+  }
+);
+
+// Atom to fetch and set journal content
+export const fetchJournalAtom = atom(null, async (get, set) => {
+  const journalId = get(currentJournalIdAtom);
+
+  if (!journalId) {
+    set(journalContentAtom, "");
+    set(journalLoadingAtom, false);
+    return;
+  }
+
+  set(journalLoadingAtom, true);
+  try {
+    // Try local DB first
+    const localJournal = await getLocalJournal(journalId);
+    if (localJournal) {
+      set(journalContentAtom, localJournal.content || "");
+      set(journalLoadingAtom, false);
+      return;
+    }
+
+    // Fallback to server
+    const journal = await api.journal.getById(journalId);
+    set(journalContentAtom, journal.content || "");
+
+    // Save to local DB
+    const currentJourney = get(currentJourneyAtom);
+    if (currentJourney?.userId) {
+      await createLocalJournal({
+        id: journal.id,
+        userId: currentJourney.userId,
+        content: journal.content,
+        createdAt: journal.createdAt,
+        updatedAt: journal.updatedAt,
+        isDirty: false,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to fetch journal:", error);
+    set(journalContentAtom, "");
+  } finally {
+    set(journalLoadingAtom, false);
+  }
+});
+
 // Atom to update journal content
 export const updateJournalAtom = atom(
   null,
   async (get, set, content: string, options?: { immediate?: boolean }) => {
     const journalId = get(currentJournalIdAtom);
-    const currentJourney = get(currentJourneyAtom);
 
-    if (!(journalId && currentJourney?.userId)) return;
+    if (!journalId) return;
+
+    const currentContent = get(journalContentAtom);
+    if (content == currentContent) return;
 
     set(journalContentAtom, content);
     set(hasUnsavedChangesAtom, true);
