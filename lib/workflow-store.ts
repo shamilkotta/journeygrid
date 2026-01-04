@@ -369,6 +369,14 @@ export const onNodesChangeAtom = atom(
       return;
     }
 
+    const noChanges = filteredChanges.every(
+      (changes) =>
+        changes.type !== "add" &&
+        currentNodes.find((n) => n.id === changes.id)?.data.type == "add"
+    );
+
+    if (noChanges) return;
+
     // Check if there were any position changes (node moved) to trigger debounced save
     const hadPositionChanges = filteredChanges.some(
       (change) => change.type === "position" && change.dragging === false
