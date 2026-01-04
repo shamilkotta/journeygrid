@@ -63,7 +63,7 @@ export function transformNodeToDB(
   return {
     id: isNewNode ? nanoid() : node.id,
     journeyId,
-    title: node.data.label || "Untitled",
+    title: node.data.label || "",
     icon: node.data.icon || null,
     description: node.data.description || null,
     type: nodeType,

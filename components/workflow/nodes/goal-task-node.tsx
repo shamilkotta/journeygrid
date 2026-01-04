@@ -123,7 +123,7 @@ export const GoalTaskNode = memo(
         )}
         <Node
           className={cn(
-            "flex size-full min-h-[60px] min-w-[230px] flex-col items-start justify-center gap-2 px-4 py-2 shadow-none transition-all duration-150 ease-out",
+            "flex size-full min-h-[60px] min-w-[230px] flex-col items-start justify-center gap-0 px-4 py-2 shadow-none transition-all duration-150 ease-out",
             selected && "border-primary"
           )}
           handles={{ target: true, source: true }}

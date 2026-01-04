@@ -20,7 +20,7 @@ interface NotionTitleEditorProps {
 export function NotionTitleEditor({
   value,
   onChange,
-  placeholder = "Untitled",
+  placeholder = "",
   disabled = false,
   className,
   autoFocus = false,

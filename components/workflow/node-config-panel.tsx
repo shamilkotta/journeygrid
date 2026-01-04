@@ -150,7 +150,7 @@ export const PanelInner = () => {
   const updateJournal = useSetAtom(updateJournalAtom);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId);
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId);
-  const isCreatingJournal = useRef(false);
+  const [isCreatingJournal, setIsCreatingJournal] = useState(false);
 
   // Fetch journal when journalId changes (node or journey)
   useEffect(() => {
@@ -165,9 +165,9 @@ export const PanelInner = () => {
   const handleUpdateJournal = async (content: string) => {
     if (currentJournalId) {
       updateJournal(content);
-    } else if (!isCreatingJournal.current) {
+    } else if (!isCreatingJournal) {
       try {
-        isCreatingJournal.current = true;
+        setIsCreatingJournal(true);
         await createJournal(
           content,
           currentJourneyId!,
@@ -176,7 +176,7 @@ export const PanelInner = () => {
       } catch (error) {
         console.error("Failed to create journal:", error);
       } finally {
-        isCreatingJournal.current = false;
+        setIsCreatingJournal(false);
       }
     }
   };
@@ -352,8 +352,8 @@ export const PanelInner = () => {
                 <Label className="mb-3 block text-muted-foreground text-xs">
                   Journey Journal
                 </Label>
-                {isLoadingJournal ? (
-                  <div className="flex h-32 items-center justify-center">
+                {isLoadingJournal || isCreatingJournal ? (
+                  <div className="flex h-32">
                     <p className="text-muted-foreground text-sm">Loading...</p>
                   </div>
                 ) : (
@@ -451,8 +451,8 @@ export const PanelInner = () => {
               <Label className="mb-3 block text-muted-foreground text-xs">
                 Journal your journey
               </Label>
-              {isLoadingJournal ? (
-                <div className="flex h-32 items-center justify-center">
+              {isLoadingJournal || isCreatingJournal ? (
+                <div className="flex h-32">
                   <p className="text-muted-foreground text-sm">Loading...</p>
                 </div>
               ) : (

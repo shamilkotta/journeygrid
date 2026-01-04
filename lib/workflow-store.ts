@@ -102,6 +102,7 @@ export const createJournalAtom = atom(
       updatedAt: journal.updatedAt,
       isDirty: false,
     });
+    set(autosaveAtom, { immediate: true });
   }
 );
 
