@@ -1,7 +1,7 @@
 "use client";
 
 import { useReactFlow } from "@xyflow/react";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -10,12 +10,16 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import { createLocalJourney, updateLocalJourney } from "@/lib/local-db";
+import { generateId } from "@/lib/utils/id";
 import {
+  currentJourneyAtom,
   currentJourneyIdAtom,
   edgesAtom,
   isGeneratingAtom,
   nodesAtom,
   selectedNodeAtom,
+  setCurrentJourneyAtom,
+  updateCurrentJourneyAtom,
 } from "@/lib/workflow-store";
 
 type AIPromptProps = {
@@ -34,7 +38,10 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
   const nodes = useAtomValue(nodesAtom);
   const [edges, setEdges] = useAtom(edgesAtom);
   const [_nodes, setNodes] = useAtom(nodesAtom);
-  const _currentJourneyId = useAtomValue(currentJourneyIdAtom);
+  const currentJourneyId = useAtomValue(currentJourneyIdAtom);
+  const currentJourney = useAtomValue(currentJourneyAtom);
+  const setCurrentJourney = useSetAtom(setCurrentJourneyAtom);
+  const updateCurrentJourney = useSetAtom(updateCurrentJourneyAtom);
   const [_selectedNodeId, setSelectedNodeId] = useAtom(selectedNodeAtom);
   const { fitView } = useReactFlow();
 
@@ -86,7 +93,7 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
       try {
         // Send existing journey data for context when modifying
         const existingJourney = hasNodes
-          ? { nodes: realNodes, edges, name: _currentJourneyName }
+          ? { nodes: realNodes, edges, name: currentJourney?.name }
           : undefined;
 
         console.log("[AI Prompt] Generating journey");
@@ -120,8 +127,8 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
             // Update the canvas incrementally
             setNodes(partialData.nodes || []);
             setEdges(validEdges);
-            if (partialData.name) {
-              setCurrentJourneyName(partialData.name);
+            if (partialData.name && currentJourneyId) {
+              updateCurrentJourney({ name: partialData.name });
             }
             // Fit view after each update to keep all nodes visible
             setTimeout(() => {
@@ -143,15 +150,24 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
 
         // If no workflowId, create a new journey locally
         if (!workflowId) {
+          const journeyId = generateId();
+          const now = new Date().toISOString();
           const newJourney = await createLocalJourney({
+            id: journeyId,
+            userId: currentJourney?.userId || "",
             name: workflowData.name || "AI Generated Journey",
             description: workflowData.description || "",
             nodes: workflowData.nodes || [],
             edges: finalEdges,
+            journalId: null,
+            visibility: "private",
+            createdAt: now,
+            updatedAt: now,
+            isOwner: true,
           });
 
-          // State already updated by streaming callback
-          setCurrentJourneyId(newJourney.id);
+          // Set current journey atom
+          await setCurrentJourney(newJourney);
 
           toast.success("Created journey");
 
@@ -163,8 +179,6 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
             router.push(`/j/${newJourney.id}`);
           }
         } else {
-          setCurrentJourneyId(workflowId);
-
           console.log("[AI Prompt] Updating existing journey:", workflowId);
           console.log(
             "[AI Prompt] Has existingJourney context:",
@@ -222,15 +236,18 @@ export function AIPrompt({ workflowId, onWorkflowCreated }: AIPromptProps) {
       hasNodes,
       nodes,
       edges,
+      currentJourney,
+      currentJourneyId,
       setIsGenerating,
-      setCurrentJourneyId,
+      setCurrentJourney,
+      updateCurrentJourney,
       setNodes,
       setEdges,
-      setCurrentJourneyName,
       setSelectedNodeId,
       onWorkflowCreated,
       fitView,
       router,
+      realNodes,
     ]
   );
 
