@@ -348,6 +348,12 @@ export const journalApi = {
   getById: (journalId: string) =>
     apiCall<JournalData>(`/api/journal/${journalId}`),
 
+  create: (content: string, journeyId: string) =>
+    apiCall<JournalData>("/api/journal", {
+      method: "POST",
+      body: JSON.stringify({ content, journeyId }),
+    }),
+
   // Update a journal
   update: (journalId: string, content: string | null) =>
     apiCall<JournalData>(`/api/journal/${journalId}`, {
