@@ -5,18 +5,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journals } from "@/lib/db/schema";
 import { generateId } from "@/lib/utils/id";
-
-type SyncJournal = {
-  id: string;
-  content: string | null;
-  userId: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-type SyncRequest = {
-  journals: SyncJournal[];
-};
+import { syncJournalsSchema } from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 type SyncResponse = {
   journals: JournalData[];
@@ -33,14 +23,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await request.json()) as SyncRequest;
-
-    if (!(body.journals && Array.isArray(body.journals))) {
-      return NextResponse.json(
-        { error: "journals array is required" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const validatedBody = parseInput(syncJournalsSchema, body);
 
     const response: SyncResponse = {
       journals: [],
@@ -48,7 +32,7 @@ export async function POST(request: Request) {
     };
 
     // Filter to only journals belonging to this user
-    const userJournals = body.journals.filter(
+    const userJournals = validatedBody.journals.filter(
       (j) => j.userId === session.user.id
     );
 
@@ -136,6 +120,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to sync journals:", error);
     return NextResponse.json(
       {

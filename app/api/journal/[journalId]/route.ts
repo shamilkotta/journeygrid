@@ -3,13 +3,19 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journals } from "@/lib/db/schema";
+import {
+  journalIdParamSchema,
+  updateJournalSchema,
+} from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ journalId: string }> }
 ) {
   try {
-    const { journalId } = await context.params;
+    const params = await context.params;
+    const { journalId } = parseInput(journalIdParamSchema, params);
     const session = await auth.api.getSession({
       headers: request.headers,
     });
@@ -36,6 +42,9 @@ export async function GET(
       updatedAt: journal.updatedAt.toISOString(),
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to get journal:", error);
     return NextResponse.json(
       {
@@ -51,7 +60,8 @@ export async function PATCH(
   context: { params: Promise<{ journalId: string }> }
 ) {
   try {
-    const { journalId } = await context.params;
+    const params = await context.params;
+    const { journalId } = parseInput(journalIdParamSchema, params);
     const session = await auth.api.getSession({
       headers: request.headers,
     });
@@ -73,11 +83,12 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const validatedBody = parseInput(updateJournalSchema, body);
 
     const [updatedJournal] = await db
       .update(journals)
       .set({
-        content: body.content,
+        content: validatedBody.content,
         updatedAt: new Date(),
       })
       .where(eq(journals.id, journalId))
@@ -90,6 +101,9 @@ export async function PATCH(
       updatedAt: updatedJournal.updatedAt.toISOString(),
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to update journal:", error);
     return NextResponse.json(
       {
@@ -106,7 +120,8 @@ export async function DELETE(
   context: { params: Promise<{ journalId: string }> }
 ) {
   try {
-    const { journalId } = await context.params;
+    const params = await context.params;
+    const { journalId } = parseInput(journalIdParamSchema, params);
     const session = await auth.api.getSession({
       headers: request.headers,
     });
@@ -131,6 +146,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to delete journal:", error);
     return NextResponse.json(
       {
