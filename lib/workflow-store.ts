@@ -469,7 +469,7 @@ export const updateNodeDataAtom = atom(
       data.description && oldNode?.data.description !== data.description;
     const isIconChange = data.icon && oldNode?.data.icon !== data.icon;
 
-    if (!isLabelChange && !isDescriptionChange && !isIconChange) {
+    if (!(isLabelChange || isDescriptionChange || isIconChange)) {
       return;
     }
 

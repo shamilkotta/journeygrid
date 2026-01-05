@@ -6,9 +6,9 @@ import {
   getLocalJourney,
   type LocalJournal,
   markJournalSynced,
+  markJournalUnsynced,
   markJourneySynced,
   markJourneyUnsynced,
-  markJournalUnsynced,
 } from "./local-db";
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error" | "offline";

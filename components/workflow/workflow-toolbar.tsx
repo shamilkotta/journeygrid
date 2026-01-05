@@ -880,9 +880,9 @@ function WorkflowMenuComponent({
                 .filter((w: JourneyListItem) => w.name !== "__current__")
                 .map((journey: JourneyListItem) => (
                   <DropdownMenuItem
+                    asChild
                     className="flex items-center justify-between"
                     key={journey.id}
-                    asChild
                   >
                     <Link href={`/j/${journey.id}`} prefetch>
                       <span className="truncate">{journey.name}</span>
