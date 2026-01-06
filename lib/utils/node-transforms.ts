@@ -8,11 +8,11 @@ export type ReactFlowNodeInput = {
   type?: string;
   position: { x: number; y: number };
   data: {
-    label?: string;
-    description?: string;
-    icon?: string;
-    type?: string;
-    journalId?: string;
+    label?: string | null;
+    description?: string | null;
+    icon?: string | null;
+    type?: string | null;
+    journalId: string | null;
   };
 };
 
@@ -39,6 +39,7 @@ export function createDefaultMilestoneNode(): ReactFlowNodeInput {
       label: "Start",
       description: "",
       type: "milestone",
+      journalId: null,
     },
   };
 }

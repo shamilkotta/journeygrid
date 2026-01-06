@@ -108,9 +108,11 @@ export const createJournalAtom = atom(
 
 // Atom to fetch and set journal content
 export const fetchJournalAtom = atom(null, async (get, set) => {
-  const journalId = get(currentJournalIdAtom);
+  let journalId = get(currentJournalIdAtom);
+  const nodeId = get(selectedNodeAtom);
+  const journeyId = get(currentJourneyIdAtom);
 
-  if (!journalId) {
+  if (!journeyId) {
     set(journalContentAtom, "");
     set(journalLoadingAtom, false);
     return;
@@ -118,6 +120,11 @@ export const fetchJournalAtom = atom(null, async (get, set) => {
 
   set(journalLoadingAtom, true);
   try {
+    if (!journalId) {
+      await set(createJournalAtom, "", journeyId, nodeId ?? undefined);
+      journalId = get(currentJournalIdAtom)!;
+    }
+
     // Try local DB first
     const localJournal = await getLocalJournal(journalId);
     if (localJournal) {

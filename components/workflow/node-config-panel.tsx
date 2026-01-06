@@ -22,8 +22,6 @@ import { NotionTitleEditor } from "@/components/ui/notion-title-editor";
 import { defaultNodeIcons } from "@/lib/utils/icon-mapper";
 import {
   allJourneysAtom,
-  createJournalAtom,
-  currentJournalIdAtom,
   currentJourneyAtom,
   currentJourneyIdAtom,
   deleteEdgeAtom,
@@ -144,42 +142,20 @@ export const PanelInner = () => {
   const [activeTab, setActiveTab] = useAtom(propertiesPanelActiveTabAtom);
   const journalContent = useAtomValue(journalContentAtom);
   const isLoadingJournal = useAtomValue(journalLoadingAtom);
-  const currentJournalId = useAtomValue(currentJournalIdAtom);
-  const createJournal = useSetAtom(createJournalAtom);
   const fetchJournal = useSetAtom(fetchJournalAtom);
   const updateJournal = useSetAtom(updateJournalAtom);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId);
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId);
-  const [isCreatingJournal, setIsCreatingJournal] = useState(false);
 
   // Fetch journal when journalId changes (node or journey)
   useEffect(() => {
     fetchJournal();
-  }, [fetchJournal, currentJournalId]);
+  }, [fetchJournal, selectedNodeId, currentJourneyId]);
 
   // Count multiple selections
   const selectedNodes = nodes.filter((node) => node.selected);
   const selectedEdges = edges.filter((edge) => edge.selected);
   const hasMultipleSelections = selectedNodes.length + selectedEdges.length > 1;
-
-  const handleUpdateJournal = async (content: string) => {
-    if (currentJournalId) {
-      updateJournal(content);
-    } else if (!isCreatingJournal) {
-      try {
-        setIsCreatingJournal(true);
-        await createJournal(
-          content,
-          currentJourneyId!,
-          selectedNodeId ?? undefined
-        );
-      } catch (error) {
-        console.error("Failed to create journal:", error);
-      } finally {
-        setIsCreatingJournal(false);
-      }
-    }
-  };
 
   const handleDelete = () => {
     if (selectedNodeId) {
@@ -352,14 +328,14 @@ export const PanelInner = () => {
                 <Label className="mb-3 block text-muted-foreground text-xs">
                   Journey Journal
                 </Label>
-                {isLoadingJournal || isCreatingJournal ? (
+                {isLoadingJournal ? (
                   <div className="flex h-32">
                     <p className="text-muted-foreground text-sm">Loading...</p>
                   </div>
                 ) : (
                   <BlockEditor
                     disabled={!isOwner}
-                    onChange={handleUpdateJournal}
+                    onChange={updateJournal}
                     placeholder="Write about your journey..."
                     value={journalContent}
                   />
@@ -451,14 +427,14 @@ export const PanelInner = () => {
               <Label className="mb-3 block text-muted-foreground text-xs">
                 Journal your journey
               </Label>
-              {isLoadingJournal || isCreatingJournal ? (
+              {isLoadingJournal ? (
                 <div className="flex h-32">
                   <p className="text-muted-foreground text-sm">Loading...</p>
                 </div>
               ) : (
                 <BlockEditor
                   disabled={isGenerating || !isOwner}
-                  onChange={handleUpdateJournal}
+                  onChange={updateJournal}
                   placeholder="Start writing or type '/' for commands..."
                   value={journalContent}
                 />
