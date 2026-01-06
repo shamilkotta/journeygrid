@@ -4,17 +4,22 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { journeyNodes, journeys } from "@/lib/db/schema";
 import {
-  type ReactFlowNodeInput,
   transformNodeToDB,
   transformNodeToReactFlow,
 } from "@/lib/utils/node-transforms";
+import {
+  journeyIdParamSchema,
+  updateJourneySchema,
+} from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ journeyId: string }> }
 ) {
   try {
-    const { journeyId } = await context.params;
+    const params = await context.params;
+    const { journeyId } = parseInput(journeyIdParamSchema, params);
     const session = await auth.api.getSession({
       headers: request.headers,
     });
@@ -59,6 +64,9 @@ export async function GET(
 
     return NextResponse.json(responseData);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to get journey:", error);
     return NextResponse.json(
       {
@@ -70,9 +78,14 @@ export async function GET(
 }
 
 // Helper to build update data from request body
-function buildUpdateData(
-  body: Record<string, unknown>
-): Record<string, unknown> {
+function buildUpdateData(body: {
+  name?: string;
+  description?: string | null;
+  edges?: unknown[];
+  visibility?: "private" | "public";
+  journalId?: string | null;
+  updatedAt?: string;
+}): Record<string, unknown> {
   const updateData: Record<string, unknown> = {
     updatedAt: body.updatedAt ? new Date(body.updatedAt as string) : new Date(),
   };
@@ -101,7 +114,8 @@ export async function PATCH(
   context: { params: Promise<{ journeyId: string }> }
 ) {
   try {
-    const { journeyId } = await context.params;
+    const params = await context.params;
+    const { journeyId } = parseInput(journeyIdParamSchema, params);
     const session = await auth.api.getSession({
       headers: request.headers,
     });
@@ -123,20 +137,9 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const validatedBody = parseInput(updateJourneySchema, body);
 
-    // Validate visibility value if provided
-    if (
-      body.visibility !== undefined &&
-      body.visibility !== "private" &&
-      body.visibility !== "public"
-    ) {
-      return NextResponse.json(
-        { error: "Invalid visibility value. Must be 'private' or 'public'" },
-        { status: 400 }
-      );
-    }
-
-    const updateData = buildUpdateData(body);
+    const updateData = buildUpdateData(validatedBody);
     updateData.userId = session.user.id;
 
     // Update journey metadata (name, description, edges, visibility, journalId)
@@ -151,7 +154,7 @@ export async function PATCH(
     }
 
     // Handle nodes update if provided
-    if (body.nodes !== undefined && Array.isArray(body.nodes)) {
+    if (validatedBody.nodes !== undefined) {
       // Get existing node IDs
       const existingNodes = await db.query.journeyNodes.findMany({
         where: eq(journeyNodes.journeyId, journeyId),
@@ -160,9 +163,7 @@ export async function PATCH(
       const existingNodeIds = new Set(existingNodes.map((n) => n.id));
 
       // Get incoming node IDs
-      const incomingNodeIds = new Set(
-        body.nodes.map((n: { id: string }) => n.id)
-      );
+      const incomingNodeIds = new Set(validatedBody.nodes.map((n) => n.id));
 
       // Delete nodes that are no longer present
       const nodesToDelete = [...existingNodeIds].filter(
@@ -175,7 +176,7 @@ export async function PATCH(
       }
 
       // Upsert nodes
-      for (const node of body.nodes as ReactFlowNodeInput[]) {
+      for (const node of validatedBody.nodes) {
         if (existingNodeIds.has(node.id)) {
           // Update existing node
           const dbNode = transformNodeToDB(node, journeyId);
@@ -230,6 +231,9 @@ export async function PATCH(
       isOwner: true,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to update journey:", error);
     return NextResponse.json(
       {
@@ -246,7 +250,8 @@ export async function DELETE(
   context: { params: Promise<{ journeyId: string }> }
 ) {
   try {
-    const { journeyId } = await context.params;
+    const params = await context.params;
+    const { journeyId } = parseInput(journeyIdParamSchema, params);
     const session = await auth.api.getSession({
       headers: request.headers,
     });
@@ -271,6 +276,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to delete journey:", error);
     return NextResponse.json(
       {

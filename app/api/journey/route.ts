@@ -2,14 +2,16 @@ import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { JourneyNodeDB, journeyNodes, journeys } from "@/lib/db/schema";
+import { type JourneyNodeDB, journeyNodes, journeys } from "@/lib/db/schema";
+import { generateId } from "@/lib/utils/id";
 import {
-  ReactFlowNodeInput,
   createDefaultMilestoneNode,
+  type ReactFlowNodeInput,
   transformNodeToDB,
   transformNodeToReactFlow,
 } from "@/lib/utils/node-transforms";
-import { generateId } from "@/lib/utils/id";
+import { createJourneySchema } from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 export async function GET(request: Request) {
   try {
@@ -62,33 +64,27 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
-    if (!(body.name && body.nodes && body.edges)) {
-      return NextResponse.json(
-        { error: "Name, nodes, and edges are required" },
-        { status: 400 }
-      );
-    }
+    const validatedBody = parseInput(createJourneySchema, body);
 
     // Ensure there's always a milestone node (only add one if nodes array is empty)
-    let nodes = body.nodes;
+    let nodes = validatedBody.nodes;
     if (nodes.length === 0) {
       nodes = [createDefaultMilestoneNode()];
     }
 
-    const journeyName = body.name;
+    const journeyName = validatedBody.name;
 
     // Use provided ID or generate a new one
-    const journeyId = body.id || generateId();
+    const journeyId = validatedBody.id || generateId();
 
     const [newJourney] = await db
       .insert(journeys)
       .values({
         id: journeyId,
         name: journeyName,
-        description: body.description,
-        edges: body.edges,
-        journalId: body.journalId || null,
+        description: validatedBody.description,
+        edges: validatedBody.edges,
+        journalId: validatedBody.journalId || null,
         userId: session.user.id,
       })
       .returning();
@@ -118,6 +114,9 @@ export async function POST(request: Request) {
       updatedAt: newJourney.updatedAt.toISOString(),
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to create journey:", error);
     return NextResponse.json(
       {

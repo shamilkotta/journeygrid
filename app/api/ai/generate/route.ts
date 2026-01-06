@@ -1,6 +1,8 @@
 import { streamText } from "ai";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { aiGenerateSchema } from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 // Simple type for operations
 type Operation = {
@@ -250,14 +252,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { prompt, existingWorkflow } = body;
-
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 }
-      );
-    }
+    const validatedBody = parseInput(aiGenerateSchema, body);
+    const { prompt, existingWorkflow } = validatedBody;
 
     const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY;
 
@@ -353,6 +349,9 @@ Example: If user says "connect node A to node B", output:
       },
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to generate journey:", error);
     return NextResponse.json(
       {

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { accounts, users } from "@/lib/db/schema";
+import { updateUserSchema } from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 export async function GET(request: Request) {
   try {
@@ -80,19 +82,20 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const updates: { name?: string; email?: string } = {};
+    const validatedBody = parseInput(updateUserSchema, body);
+    const updates: { name?: string } = {};
 
-    if (body.name !== undefined) {
-      updates.name = body.name;
-    }
-    if (body.email !== undefined) {
-      // updates.email = body.email;
+    if (validatedBody.name !== undefined) {
+      updates.name = validatedBody.name;
     }
 
     await db.update(users).set(updates).where(eq(users.id, session.user.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to update user:", error);
     return NextResponse.json(
       {

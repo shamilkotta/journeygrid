@@ -9,25 +9,10 @@ import {
   type ReactFlowNodeInput,
   transformNodeToDB,
 } from "@/lib/utils/node-transforms";
+import { syncJourneysSchema } from "@/lib/validations/schemas";
+import { parseInput, ValidationError } from "@/lib/validations/utils";
 
 type SyncNode = ReactFlowNodeInput;
-
-type SyncJourney = {
-  id: string;
-  name: string;
-  description?: string;
-  nodes: SyncNode[];
-  edges: unknown[];
-  journalId?: string | null;
-  visibility?: "private" | "public";
-  createdAt?: string;
-  updatedAt?: string;
-  userId?: string;
-};
-
-type SyncRequest = {
-  journeys: SyncJourney[];
-};
 
 type SyncResponse = {
   journeys: Partial<JourneyData>[];
@@ -101,14 +86,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await request.json()) as SyncRequest;
-
-    if (!(body.journeys && Array.isArray(body.journeys))) {
-      return NextResponse.json(
-        { error: "journeys array is required" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const validatedBody = parseInput(syncJourneysSchema, body);
 
     const response: SyncResponse = {
       journeys: [],
@@ -116,7 +95,7 @@ export async function POST(request: Request) {
     };
 
     // Get IDs of journeys being synced
-    const syncIds = body.journeys.map((r) => r.id);
+    const syncIds = validatedBody.journeys.map((r) => r.id);
 
     // Check which ones already exist for this user
     const existingJourneys = await db
@@ -129,7 +108,7 @@ export async function POST(request: Request) {
     const existingIds = new Set(existingJourneys.map((r) => r.id));
 
     // Process each journey
-    for (const journey of body.journeys) {
+    for (const journey of validatedBody.journeys) {
       try {
         if (existingIds.has(journey.id)) {
           // Update existing journey
@@ -208,6 +187,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.toResponse();
+    }
     console.error("Failed to sync journeys:", error);
     return NextResponse.json(
       {
